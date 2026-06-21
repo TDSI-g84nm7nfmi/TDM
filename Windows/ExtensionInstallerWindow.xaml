@@ -1,0 +1,79 @@
+<Window x:Class="TDM.Windows.ExtensionInstallerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="TDM - 检测到浏览器"
+        Width="540" Height="540"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Background="{StaticResource BackgroundBottomBrush}">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 头部 -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
+            <Border Width="40" Height="40" CornerRadius="20"
+                    Background="{StaticResource PrimaryBrush}" Margin="0,0,12,0">
+                <TextBlock Text="🧩" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="检测到浏览器" FontSize="18" FontWeight="Bold"
+                           Foreground="{StaticResource TextBrush}"/>
+                <TextBlock Text="为它们安装 TDM 浏览器扩展，让所有下载自动交由 TDM 管理"
+                           FontSize="12" Foreground="{StaticResource SubTextBrush}" Margin="0,2,0,0"
+                           TextWrapping="Wrap" MaxWidth="380"/>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- 操作按钮 -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12">
+            <Button x:Name="OpenExtFolderButton" Content="📂 打开扩展目录"
+                    Style="{StaticResource FlatButton}" Padding="14,6" Margin="0,0,8,0"
+                    Click="OnOpenExtFolder" ToolTip="打开资源管理器定位扩展文件夹"/>
+            <Button x:Name="OpenHelpButton" Content="📖 查看加载说明"
+                    Style="{StaticResource FlatButton}" Padding="14,6"
+                    Click="OnOpenHelp" ToolTip="打开浏览器扩展加载的详细说明"/>
+        </StackPanel>
+
+        <!-- 状态摘要 -->
+        <Border Grid.Row="2" Style="{StaticResource CardBorder}" Padding="12,8" Margin="0,0,0,12">
+            <TextBlock x:Name="SummaryLabel" FontSize="12" Foreground="{StaticResource SubTextBrush}"/>
+        </Border>
+
+        <!-- 浏览器列表 -->
+        <Border Grid.Row="3" Style="{StaticResource CardBorder}" Padding="0">
+            <ListBox x:Name="BrowserList" BorderThickness="0" Background="Transparent"
+                     SelectionMode="Extended" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="Padding" Value="14,8"/>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+            </ListBox>
+        </Border>
+
+        <!-- 复选框 -->
+        <StackPanel Grid.Row="4" Margin="0,12,0,0">
+            <CheckBox x:Name="RememberChoiceCheck" Content="不再提示（可在「设置 → 高级」中重新启用）"
+                      IsChecked="False" Style="{StaticResource ModernCheckBox}"/>
+            <CheckBox x:Name="AutoInstallCheck" Content="安装后自动加载到浏览器（将关闭浏览器并重新启动）"
+                      IsChecked="True" Margin="0,6,0,0" Style="{StaticResource ModernCheckBox}"/>
+        </StackPanel>
+
+        <!-- 底部按钮 -->
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button x:Name="SkipButton" Content="稍后再说" Style="{StaticResource FlatButton}"
+                    Padding="16,6" Margin="0,0,8,0" Click="OnSkip"/>
+            <Button x:Name="InstallButton" Content="为所选浏览器安装" Style="{StaticResource PrimaryButton}"
+                    Padding="16,6" Click="OnInstall"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -1,0 +1,78 @@
+<Window x:Class="TDM.Windows.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="关于 TDM"
+        Width="460" Height="500"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Background="{StaticResource BackgroundBottomBrush}">
+    <Grid Margin="28">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 头部 -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,16">
+            <Image Source="{Binding AppIconSource, RelativeSource={RelativeSource AncestorType=Window}}"
+                   Width="56" Height="56" Margin="0,0,12,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="TDM" FontFamily="{StaticResource UIFontFamily}" FontSize="24" FontWeight="Bold"
+                           Foreground="{StaticResource PrimaryBrush}"/>
+                <TextBlock Text="TDSI Download Manager" FontFamily="{StaticResource UIFontFamily}" FontSize="12"
+                           Foreground="{StaticResource SubTextBrush}"/>
+                <TextBlock x:Name="VersionText" Text="v1.0.0" FontFamily="{StaticResource UIFontFamily}" FontSize="11"
+                           Foreground="{StaticResource SubTextBrush}" Margin="0,2,0,0"/>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- 内容 -->
+        <Border Grid.Row="1" Style="{StaticResource CardBorder}" Padding="20">
+            <StackPanel>
+                <TextBlock Text="现代化的多线程下载管理器" Style="{StaticResource GroupTitle}" Margin="0,0,0,8"/>
+                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextBrush}" FontFamily="{StaticResource UIFontFamily}">
+                    <Run Text="• 多线程分片下载，断点续传"/>
+                    <LineBreak/>
+                    <Run Text="• 智能资源嗅探"/>
+                    <LineBreak/>
+                    <Run Text="• 剪贴板自动识别"/>
+                    <LineBreak/>
+                    <Run Text="• 现代化界面，多主题切换"/>
+                </TextBlock>
+                <TextBlock Margin="0,12,0,0" FontFamily="{StaticResource UIFontFamily}">
+                    <Run Text="作者：" Foreground="{StaticResource SubTextBrush}"/>
+                    <Hyperlink x:Name="AuthorLink" Click="OnAuthorClick" Foreground="{StaticResource PrimaryBrush}"
+                               TextDecorations="None">B站@会飞的附魔下界合金剑</Hyperlink>
+                </TextBlock>
+                <TextBlock Margin="0,4,0,0" FontFamily="{StaticResource UIFontFamily}">
+                    <Run Text="项目：" Foreground="{StaticResource SubTextBrush}"/>
+                    <Hyperlink x:Name="GithubLink" Click="OnGithubClick" Foreground="{StaticResource PrimaryBrush}"
+                               TextDecorations="None">github.com</Hyperlink>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <!-- 推广卡片 -->
+        <Border Grid.Row="2" CornerRadius="8" Padding="14,10" Margin="0,12,0,0"
+                Background="#1A4a9eff" BorderBrush="{StaticResource PrimaryBrush}" BorderThickness="1">
+            <StackPanel>
+                <TextBlock Text="你在找好玩的 Minecraft 服务器吗？" Foreground="{StaticResource TextBrush}"
+                           FontFamily="{StaticResource UIFontFamily}" FontSize="12" FontWeight="SemiBold"/>
+                <TextBlock Margin="0,4,0,0" FontFamily="{StaticResource UIFontFamily}" FontSize="12">
+                    <Run Text="点击这里 -->" Foreground="{StaticResource SubTextBrush}"/>
+                    <Hyperlink x:Name="TdsiLink" Click="OnTdsiClick" Foreground="{StaticResource PrimaryBrush}"
+                               FontWeight="Bold" TextDecorations="None">TDSI 服务器</Hyperlink>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <!-- 底部 -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <TextBlock Text="© 2024-2026" Style="{StaticResource SubText}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+            <Button Style="{StaticResource PrimaryButton}" Content="关闭" Width="80" Click="OnCloseClick"/>
+        </StackPanel>
+    </Grid>
+</Window>

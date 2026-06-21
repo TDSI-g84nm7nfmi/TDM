@@ -1,0 +1,4 @@
+# TDM (T-Downloader Manager) 构建依赖
+# 前端使用 C# / WPF / .NET 6.0，Python 仅用于构建脚本与原生消息主机
+setuptools>=68.0
+pyinstaller>=6.0

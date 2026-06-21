@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>TDM</title>
+<style>
+    body {
+        width: 280px;
+        margin: 0;
+        padding: 16px;
+        font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+        background: linear-gradient(180deg, #ffffff 0%, #f5f7fa 100%);
+        color: #1a1a1a;
+    }
+    .header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .logo {
+        width: 36px; height: 36px; border-radius: 9px;
+        background: linear-gradient(135deg, #4a9eff 0%, #2670d8 100%);
+        color: #fff; display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 14px; letter-spacing: 0.5px;
+        box-shadow: 0 4px 10px rgba(74, 158, 255, 0.35);
+    }
+    .name { font-weight: 700; font-size: 14px; }
+    .sub { font-size: 11px; color: #888; }
+    .row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
+    .label { font-size: 13px; }
+    .status { font-size: 11px; padding: 3px 8px; border-radius: 10px; }
+    .ok { background: #e3f7e8; color: #2bb44a; }
+    .err { background: #fde8e8; color: #d63031; }
+    /* iOS 风格开关 */
+    .switch { position: relative; width: 42px; height: 24px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+        position: absolute; cursor: pointer; inset: 0;
+        background: #d0d0d0; border-radius: 12px; transition: 0.2s;
+    }
+    .slider:before {
+        position: absolute; content: ""; height: 20px; width: 20px;
+        left: 2px; top: 2px; background: white; border-radius: 50%;
+        transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    input:checked + .slider { background: #4a9eff; }
+    input:checked + .slider:before { transform: translateX(18px); }
+    .info { margin-top: 10px; padding: 10px; background: #f0f4f9; border-radius: 8px; font-size: 12px; color: #555; line-height: 1.6; }
+    .ping-btn { margin-top: 10px; width: 100%; padding: 8px; border: none; border-radius: 8px; background: #4a9eff; color: #fff; font-weight: 600; cursor: pointer; }
+    .ping-btn:hover { background: #5aa8ff; }
+</style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">TDM</div>
+        <div>
+            <div class="name">TDSI Download Manager</div>
+            <div class="sub">浏览器下载接管</div>
+        </div>
+    </div>
+    <div class="row">
+        <span class="label">接管下载</span>
+        <label class="switch">
+            <input type="checkbox" id="enabled">
+            <span class="slider"></span>
+        </label>
+    </div>
+    <div class="row">
+        <span class="label">媒体旁下载按钮</span>
+        <label class="switch">
+            <input type="checkbox" id="overlay">
+            <span class="slider"></span>
+        </label>
+    </div>
+    <div class="row">
+        <span class="label">主程序</span>
+        <span id="conn" class="status err">未连接</span>
+    </div>
+    <div class="info">
+        打开 TDM 主程序即可接管所有浏览器下载，<br>
+        并在图片 / 视频 / 音频旁显示下载按钮。
+    </div>
+    <button class="ping-btn" id="ping">测试连接</button>
+    <script src="popup.js"></script>
+</body>
+</html>

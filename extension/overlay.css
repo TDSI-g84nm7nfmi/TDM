@@ -1,0 +1,78 @@
+/* TDM Overlay - 媒体元素旁的下载按钮 */
+.tdm-dl-btn {
+    position: absolute !important;
+    top: 8px;
+    right: 8px;
+    z-index: 2147483646 !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    background: linear-gradient(135deg, #4a9eff 0%, #2670d8 100%);
+    color: #fff;
+    font: 600 12px/1 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    border: none;
+    border-radius: 14px;
+    box-shadow: 0 4px 12px rgba(74, 158, 255, 0.45), 0 1px 3px rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+    user-select: none;
+    opacity: 0;
+    transform: translateY(-4px) scale(0.9);
+    transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    pointer-events: auto;
+}
+.tdm-media-wrap:hover > .tdm-dl-btn,
+.tdm-media-wrap:focus-within > .tdm-dl-btn,
+.tdm-dl-btn:focus {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+.tdm-dl-btn:hover {
+    background: linear-gradient(135deg, #5aa8ff 0%, #2c80ea 100%);
+    box-shadow: 0 6px 18px rgba(74, 158, 255, 0.55), 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+.tdm-dl-btn:active {
+    transform: scale(0.95);
+}
+.tdm-dl-btn svg {
+    flex: 0 0 14px;
+    display: block;
+}
+.tdm-dl-btn span {
+    letter-spacing: 0.5px;
+}
+.tdm-dl-busy {
+    background: linear-gradient(135deg, #aaa 0%, #888 100%) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    pointer-events: none;
+}
+.tdm-dl-ok {
+    background: linear-gradient(135deg, #4cd964 0%, #2bb44a 100%) !important;
+}
+.tdm-dl-err {
+    background: linear-gradient(135deg, #ff5a5a 0%, #d63031 100%) !important;
+}
+
+/* Toast */
+.tdm-toast {
+    position: fixed !important;
+    bottom: 28px;
+    left: 50%;
+    transform: translate(-50%, 20px);
+    z-index: 2147483647 !important;
+    background: rgba(30, 30, 30, 0.92);
+    color: #fff;
+    font: 500 13px/1.4 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    padding: 12px 20px;
+    border-radius: 22px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    max-width: 80vw;
+    text-align: center;
+}
+.tdm-toast-show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}

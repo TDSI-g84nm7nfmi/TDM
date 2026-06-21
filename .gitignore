@@ -1,0 +1,30 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.sln.docstates
+*.log
+*.tmp
+*.bak
+
+# 构建产物
+dist/publish/
+dist/TDSI-Download-Manager-Setup.exe
+dist/installer.nsi.utf16.nsi
+dist/*.bmp
+dist/icon.ico
+dist/setup.ico
+
+# Python 虚拟环境
+.venv/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+
+# 运行时生成
+*.pyc
+__pycache__/
