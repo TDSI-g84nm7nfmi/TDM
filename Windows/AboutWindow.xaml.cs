@@ -24,7 +24,7 @@ namespace TDM.Windows
 
         private void OnGithubClick(object sender, RoutedEventArgs e)
         {
-            OpenUrl("https://github.com/");
+            OpenUrl("https://github.com/TDSI-g84nm7nfmi/TDM");
         }
 
         private void OnTdsiClick(object sender, RoutedEventArgs e)

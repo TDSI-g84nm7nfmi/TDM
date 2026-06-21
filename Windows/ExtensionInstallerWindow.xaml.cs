@@ -180,24 +180,93 @@ namespace TDM.Windows
             if (!File.Exists(exe)) { Logger.Warn($"浏览器主程序不存在: {exe}"); return; }
 
             string procName = Path.GetFileNameWithoutExtension(exe);
-            KillProcess(procName);
-            System.Threading.Thread.Sleep(1000);
 
-            string args = $"--load-extension=\"{ExtensionDir}\" --no-first-run";
-            Process.Start(new ProcessStartInfo
+            // 1) 杀光同进程名所有实例（含子进程和已锁共享内存的 helper）
+            KillAll(procName);
+            System.Threading.Thread.Sleep(800);
+            // 2) 通用 Chromium helper 进程（renderer、gpu、utility、crashpad 等）
+            //    这些进程持有共享内存句柄，会导致新进程报"配额不足"
+            KillHelperProcesses();
+            System.Threading.Thread.Sleep(800);
+
+            // 3) 启动浏览器加载扩展（独立 user-data-dir 避免冲突）
+            string userDataDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "TDM", "browser_profiles", browser.Id ?? procName);
+            Directory.CreateDirectory(userDataDir);
+
+            string args = $"--load-extension=\"{ExtensionDir}\" " +
+                          $"--user-data-dir=\"{userDataDir}\" " +
+                          $"--no-first-run --no-default-browser-check " +
+                          $"--disable-features=ChromeWhatsNewUI";
+
+            for (int attempt = 1; attempt <= 3; attempt++)
             {
-                FileName = exe,
-                Arguments = args,
-                UseShellExecute = true,
-                WindowStyle = ProcessWindowStyle.Normal,
-            });
-            Logger.Info($"已启动 {browser.Name} 并加载扩展: {ExtensionDir}");
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = exe,
+                        Arguments = args,
+                        UseShellExecute = true,
+                        WindowStyle = ProcessWindowStyle.Normal,
+                    });
+                    Logger.Info($"已启动 {browser.Name} 并加载扩展: {ExtensionDir} (尝试 {attempt})");
+                    return;
+                }
+                catch (Exception ex) when (attempt < 3)
+                {
+                    Logger.Warn($"启动 {browser.Name} 失败（尝试 {attempt}/3）: {ex.Message}");
+                    KillHelperProcesses();
+                    System.Threading.Thread.Sleep(1500);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"启动 {browser.Name} 最终失败: {ex.Message}", ex);
+                    MessageBox.Show(
+                        $"启动 {browser.Name} 失败：{ex.Message}\n\n" +
+                        "可能原因：\n" +
+                        "• 浏览器有残留进程占用共享内存\n" +
+                        "• 系统资源不足\n\n" +
+                        "请手动关闭所有浏览器窗口后重试。",
+                        App.AppName, MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
         }
 
-        private static void KillProcess(string processName)
+        private static void KillAll(string processName)
         {
-            try { foreach (var p in Process.GetProcessesByName(processName)) { try { p.Kill(); } catch { } } }
+            try
+            {
+                foreach (var p in Process.GetProcessesByName(processName))
+                {
+                    try { p.Kill(); p.WaitForExit(2000); } catch { }
+                }
+            }
             catch { }
+        }
+
+        // 杀掉所有 Chromium helper 进程（renderer、gpu、crashpad、utility 等）
+        // 这些进程即使主程序已退出，仍可能持有共享内存句柄导致配额不足
+        private static void KillHelperProcesses()
+        {
+            string[] helpers = {
+                "chrome", "msedge", "chromium", "brave", "vivaldi", "tabbit", "tabbitbrowser",
+                "360chrome", "qqbrowser", "centbrowser", "yandex", "iridium",
+                "chrome_gpu_child", "chrome_renderer", "chrome_crashpad", "chrome_utility",
+                "msedge_gpu_child", "msedge_renderer", "msedge_crashpad", "msedge_utility"
+            };
+            foreach (var name in helpers)
+            {
+                try
+                {
+                    foreach (var p in Process.GetProcessesByName(name))
+                    {
+                        try { p.Kill(); p.WaitForExit(1000); } catch { }
+                    }
+                }
+                catch { }
+            }
         }
 
         private static void CopyDirContents(string src, string dst)

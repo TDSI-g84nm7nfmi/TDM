@@ -50,7 +50,7 @@
                 <TextBlock Margin="0,4,0,0" FontFamily="{StaticResource UIFontFamily}">
                     <Run Text="项目：" Foreground="{StaticResource SubTextBrush}"/>
                     <Hyperlink x:Name="GithubLink" Click="OnGithubClick" Foreground="{StaticResource PrimaryBrush}"
-                               TextDecorations="None">github.com</Hyperlink>
+                               TextDecorations="None">github.com/TDSI-g84nm7nfmi/TDM</Hyperlink>
                 </TextBlock>
             </StackPanel>
         </Border>
