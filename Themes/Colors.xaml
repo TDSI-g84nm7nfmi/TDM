@@ -133,8 +133,8 @@
 
     <!-- ==================== 尺寸 / 间距 ==================== -->
     <sys:Double x:Key="TitleBarHeight">52</sys:Double>
-    <sys:Double x:Key="SidebarWidth">232</sys:Double>
-    <sys:Double x:Key="SidebarCollapsedWidth">72</sys:Double>
+    <GridLength x:Key="SidebarWidth">232</GridLength>
+    <GridLength x:Key="SidebarCollapsedWidth">72</GridLength>
     <sys:Double x:Key="ButtonHeight">36</sys:Double>
     <sys:Double x:Key="ControlHeight">40</sys:Double>
     <sys:Double x:Key="InputHeight">40</sys:Double>
