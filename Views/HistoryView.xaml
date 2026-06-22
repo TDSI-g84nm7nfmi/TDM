@@ -7,7 +7,7 @@
              xmlns:conv="clr-namespace:TDM.Converters"
              mc:Ignorable="d"
              d:DesignHeight="500" d:DesignWidth="700"
-             Background="{StaticResource BackgroundBottomBrush}">
+             Background="Transparent">
     <UserControl.Resources>
         <conv:BytesToStringConverter x:Key="BytesToStr"/>
         <conv:StatusToBrushConverter x:Key="StatusToBrush"/>
@@ -17,78 +17,103 @@
         <vm:HistoryViewModel/>
     </UserControl.DataContext>
 
-    <Grid Margin="20">
+    <Grid Margin="24,20,24,16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- 工具栏 -->
-        <DockPanel Grid.Row="0" Margin="0,0,0,12">
-            <TextBlock Text="下载历史" Style="{StaticResource GroupTitle}" VerticalAlignment="Center"/>
-            <TextBlock Text="{Binding Entries.Count, StringFormat='（共 {0} 条）'}" Style="{StaticResource SubText}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Style="{StaticResource FlatButton}" Content="打开目录" Command="{Binding OpenFolderCommand}" Padding="10,4" Margin="0,0,6,0"/>
-                <Button Style="{StaticResource FlatButton}" Content="复制链接" Command="{Binding CopyUrlCommand}" Padding="10,4" Margin="0,0,6,0"/>
-                <Button Style="{StaticResource FlatButton}" Content="重新下载" Command="{Binding RetryCommand}" Padding="10,4" Margin="0,0,6,0"/>
-                <Button Style="{StaticResource FlatButton}" Content="删除" Command="{Binding RemoveCommand}" Padding="10,4" Margin="0,0,6,0"/>
-                <Button Style="{StaticResource FlatButton}" Content="清空" Command="{Binding ClearCommand}" Padding="10,4"/>
-            </StackPanel>
-        </DockPanel>
-
-        <!-- 表格 -->
-        <Border Grid.Row="1" Style="{StaticResource CardBorder}" Padding="0">
-            <DataGrid ItemsSource="{Binding Entries}" SelectedItem="{Binding SelectedEntry}"
-                      Style="{StaticResource ModernDataGrid}" BorderThickness="0">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="文件名" Binding="{Binding FileName}" Width="*"/>
-                    <DataGridTextColumn Header="大小" Binding="{Binding Size, Converter={StaticResource BytesToStr}}" Width="100"/>
-                    <DataGridTemplateColumn Header="状态" Width="90">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <Border CornerRadius="3" Padding="6,2" HorizontalAlignment="Left"
-                                        Background="{Binding Status, Converter={StaticResource StatusToBrush}}">
-                                    <TextBlock Text="{Binding Status}" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
-                                </Border>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="开始时间" Binding="{Binding StartTimeText}" Width="150"/>
-                    <DataGridTextColumn Header="完成时间" Binding="{Binding EndTimeText}" Width="150"/>
-                </DataGrid.Columns>
-            </DataGrid>
-        </Border>
-
-        <!-- 空状态 -->
-        <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
-                    Visibility="{Binding Entries.Count, Converter={StaticResource CountToVis}, ConverterParameter=invert}">
-            <TextBlock Text="📁" FontSize="48" HorizontalAlignment="Center" Foreground="{StaticResource SubTextBrush}"/>
-            <TextBlock Text="暂无下载历史" Style="{StaticResource SubText}" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+        <!-- 标题 -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="下载历史" Style="{StaticResource H1}"/>
+            <TextBlock Text="查看所有已完成的下载记录" Style="{StaticResource BodySecondary}" Margin="0,2,0,0"/>
         </StackPanel>
 
-        <!-- 详情 -->
-        <Border Grid.Row="2" Style="{StaticResource CardBorder}" Margin="0,12,0,0"
-                Visibility="{Binding SelectedEntry, Converter={StaticResource NullToBool}}">
-            <StackPanel>
-                <TextBlock Text="详情" Style="{StaticResource GroupTitle}" Margin="0,0,0,8"/>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="90"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition/>
-                        <RowDefinition/>
-                    </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Grid.Column="0" Text="URL" Style="{StaticResource SubText}" VerticalAlignment="Top"/>
-                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedEntry.Url}" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}"/>
-                    <TextBlock Grid.Row="1" Grid.Column="0" Text="错误信息" Style="{StaticResource SubText}" Margin="0,6,0,0"
-                               Visibility="{Binding SelectedEntry.Error, Converter={StaticResource NullToBool}}"/>
-                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedEntry.Error}" TextWrapping="Wrap" Foreground="{StaticResource ErrorBrush}" Margin="0,6,0,0"
-                               Visibility="{Binding SelectedEntry.Error, Converter={StaticResource NullToBool}}"/>
-                </Grid>
-            </StackPanel>
+        <!-- 工具栏 -->
+        <Border Grid.Row="1" Style="{StaticResource CardBorder}" Padding="14,10" Margin="0,0,0,14">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="FilterBox" Grid.Column="0" Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged, Delay=300}"
+                         Style="{StaticResource ModernTextBox}" MaxWidth="320" HorizontalAlignment="Left"
+                         ToolTip="搜索文件名或 URL"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Style="{StaticResource GhostButton}" Content="打开目录" Command="{Binding OpenFolderCommand}" Padding="12,5" Margin="0,0,4,0"/>
+                    <Button Style="{StaticResource GhostButton}" Content="复制链接" Command="{Binding CopyUrlCommand}" Padding="12,5" Margin="0,0,4,0"/>
+                    <Button Style="{StaticResource SecondaryButton}" Content="重新下载" Command="{Binding RetryCommand}" Padding="12,5" Margin="0,0,4,0"/>
+                    <Button Style="{StaticResource GhostButton}" Content="删除" Command="{Binding RemoveCommand}" Padding="12,5" Margin="0,0,4,0"/>
+                    <Button Style="{StaticResource DangerButton}" Content="清空" Command="{Binding ClearCommand}" Padding="12,5"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 表格 -->
+        <Border Grid.Row="2" Style="{StaticResource CardBorder}" Padding="0">
+            <Grid>
+                <DataGrid ItemsSource="{Binding EntriesView}" SelectedItem="{Binding SelectedEntry}"
+                          Style="{StaticResource ModernDataGrid}" BorderThickness="0">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="文件名" Binding="{Binding FileName}" Width="*">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn Header="大小" Binding="{Binding Size, Converter={StaticResource BytesToStr}}" Width="100">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="FontFamily" Value="{StaticResource MonoFontFamily}"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTemplateColumn Header="状态" Width="90">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border CornerRadius="10" Padding="10,3" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                            Background="{Binding Status, Converter={StaticResource StatusToBrush}}">
+                                        <TextBlock Text="{Binding Status}" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="开始时间" Binding="{Binding StartTimeText}" Width="140">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="FontSize" Value="12"/>
+                                    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn Header="完成时间" Binding="{Binding EndTimeText}" Width="140">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="FontSize" Value="12"/>
+                                    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <!-- 空状态 -->
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                            Visibility="{Binding Entries.Count, Converter={StaticResource CountToVis}, ConverterParameter=invert}">
+                    <Border Width="80" Height="80" CornerRadius="40" Background="#1A4F8BFF" HorizontalAlignment="Center">
+                        <Path Width="36" Height="36" Stretch="Uniform" Fill="{StaticResource PrimaryBrush}"
+                              Data="M12,3 v10 M7,9 l5,5 5,-5 M5,21 h14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="暂无下载历史" Style="{StaticResource H3}" HorizontalAlignment="Center" Margin="0,16,0,4"/>
+                    <TextBlock Text="完成的下载会出现在这里" Style="{StaticResource BodySecondary}" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

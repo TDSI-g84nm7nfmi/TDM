@@ -14,5 +14,14 @@ namespace TDM.Views
         }
 
         public void Refresh() => ViewModel.Refresh();
+
+        public void ApplySearchFilter(string keyword)
+        {
+            try
+            {
+                ViewModel.Filter = keyword;
+            }
+            catch { }
+        }
     }
 }

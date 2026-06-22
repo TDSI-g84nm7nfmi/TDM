@@ -76,6 +76,17 @@ namespace TDM.Services
             SettingsService.Update(s => s.Theme = theme);
         }
 
+        /// <summary>
+        /// 循环切换到下一个主题（按蓝→绿→紫→粉→暗 顺序）。
+        /// </summary>
+        public static void CycleTheme()
+        {
+            var order = new[] { Blue, Green, Purple, Pink, Dark };
+            int idx = Array.IndexOf(order, Current);
+            if (idx < 0) idx = 0;
+            Set(order[(idx + 1) % order.Length]);
+        }
+
         public static void PersistCurrent()
         {
             SettingsService.Update(s => s.Theme = Current);

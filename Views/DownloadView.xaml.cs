@@ -27,6 +27,16 @@ namespace TDM.Views
             UrlTextBox.CaretIndex = url.Length;
         }
 
+        public void FocusUrlBox()
+        {
+            try
+            {
+                UrlTextBox.Focus();
+                UrlTextBox.SelectAll();
+            }
+            catch { }
+        }
+
         public void TogglePause() => ViewModel.TogglePause();
 
         private void OnUrlKeyDown(object sender, KeyEventArgs e)

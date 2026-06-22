@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Windows.Data;
 using System.Windows.Input;
 using TDM.Models;
 using TDM.Services;
@@ -8,6 +10,21 @@ namespace TDM.ViewModels
     public class HistoryViewModel : ObservableObject
     {
         public ObservableCollection<HistoryEntry> Entries { get; } = new();
+
+        public ICollectionView EntriesView { get; }
+
+        private string _filter = "";
+        public string Filter
+        {
+            get => _filter;
+            set
+            {
+                if (SetProperty(ref _filter, value))
+                {
+                    EntriesView.Refresh();
+                }
+            }
+        }
 
         private HistoryEntry? _selectedEntry;
         public HistoryEntry? SelectedEntry
@@ -30,8 +47,20 @@ namespace TDM.ViewModels
             RetryCommand = new RelayCommand(_ => Retry(), _ => SelectedEntry != null);
             CopyUrlCommand = new RelayCommand(_ => CopyUrl(), _ => SelectedEntry != null);
 
+            EntriesView = CollectionViewSource.GetDefaultView(Entries);
+            EntriesView.Filter = FilterPredicate;
+
             HistoryService.Changed += (_, _) => Refresh();
             Refresh();
+        }
+
+        private bool FilterPredicate(object obj)
+        {
+            if (obj is not HistoryEntry e) return false;
+            if (string.IsNullOrWhiteSpace(_filter)) return true;
+            var f = _filter.Trim();
+            return (e.FileName?.IndexOf(f, System.StringComparison.OrdinalIgnoreCase) >= 0)
+                || (e.Url?.IndexOf(f, System.StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
         public void Refresh()
@@ -39,6 +68,7 @@ namespace TDM.ViewModels
             Entries.Clear();
             foreach (var e in HistoryService.Entries)
                 Entries.Add(e);
+            EntriesView.Refresh();
         }
 
         public void Remove()

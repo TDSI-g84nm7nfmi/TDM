@@ -69,7 +69,7 @@ namespace TDM
                     if (src != null)
                     {
                         this.Icon = src;
-                        if (AppIconImage != null) AppIconImage.Source = src;
+                        // 新版 UI 用品牌渐变 "T" 字符作为 logo，不再用 Image
                     }
                 }
                 catch { }
@@ -149,15 +149,13 @@ namespace TDM
                     if (SettingsService.Current.AcrylicBlur)
                     {
                         BlurEffectHelper.EnableBlur(this, acrylic: true);
-                        // 让 RootBackdrop 半透明，毛玻璃透出来
-                        if (RootBackdrop != null)
-                        {
-                            RootBackdrop.Background = new System.Windows.Media.SolidColorBrush(
-                                System.Windows.Media.Color.FromArgb(140, 240, 245, 252));
-                        }
+                        // 新版 UI 用 VisualBrush 光晕背景，毛玻璃自然透出
                     }
                 }
                 catch (Exception ex) { Logger.Warn("毛玻璃初始化失败: " + ex.Message); }
+
+                // 启动统计定时器（1s 刷新仪表板）
+                try { StartStatsTimer(); } catch { }
             };
         }
 
@@ -469,6 +467,114 @@ namespace TDM
                 }
             }
             catch (Exception ex) { Logger.Warn("释放托盘资源失败: " + ex.Message); }
+        }
+        #endregion
+
+        #region 新版 UI 交互（主题切换、搜索、新建、扩展状态、统计刷新）
+        private void OnThemeToggleClick(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                ThemeManager.CycleTheme();
+            }
+            catch (Exception ex) { Logger.Warn("主题切换失败: " + ex.Message); }
+        }
+
+        private void OnQuickSearchKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key != System.Windows.Input.Key.Enter) return;
+            try
+            {
+                var text = (QuickSearchBox.Text ?? "").Trim();
+                if (string.IsNullOrEmpty(text)) return;
+
+                // 看起来像 URL → 填到下载
+                if (Uri.TryCreate(text, UriKind.Absolute, out var uri) &&
+                    (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+                {
+                    NavDownload.IsSelected = true;
+                    _downloadView?.SetUrl(text);
+                    QuickSearchBox.Clear();
+                    SetStatus("已填入搜索链接", 2500);
+                    return;
+                }
+
+                // 否则：尝试切换到历史
+                NavHistory.IsSelected = true;
+                _historyView?.ApplySearchFilter(text);
+                SetStatus($"搜索历史：{text}", 2500);
+            }
+            catch (Exception ex) { Logger.Warn("搜索失败: " + ex.Message); }
+        }
+
+        private void OnNewDownloadClick(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                NavDownload.IsSelected = true;
+                _downloadView?.FocusUrlBox();
+            }
+            catch (Exception ex) { Logger.Warn("新建下载失败: " + ex.Message); }
+        }
+
+        private void OnExtensionStatusClick(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                NavSettings.IsSelected = true;
+                SetStatus("请在设置中扫描并安装浏览器扩展", 3000);
+            }
+            catch (Exception ex) { Logger.Warn("跳转设置失败: " + ex.Message); }
+        }
+
+        // 实时刷新统计卡（每 1 秒）
+        private DispatcherTimer? _statsTimer;
+        private void StartStatsTimer()
+        {
+            try
+            {
+                if (_statsTimer != null) return;
+                _statsTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+                _statsTimer.Tick += (_, _) =>
+                {
+                    try { UpdateStats(); }
+                    catch (Exception ex) { Logger.Warn("统计刷新失败: " + ex.Message); }
+                };
+                _statsTimer.Start();
+            }
+            catch (Exception ex) { Logger.Warn("统计定时器启动失败: " + ex.Message); }
+        }
+
+        private void UpdateStats()
+        {
+            try
+            {
+                if (_downloadView == null) return;
+                int running = 0, completed = 0, failed = 0;
+                long totalSpeed = 0;
+                foreach (var item in DownloadManager.Instance.Items)
+                {
+                    var st = item.StatusText ?? "";
+                    if (st == "完成") completed++;
+                    else if (st == "失败" || st == "错误") failed++;
+                    else { running++; totalSpeed += (long)item.Speed; }
+                }
+                if (_downloadView.StatRunning != null) _downloadView.StatRunning.Text = running.ToString();
+                if (_downloadView.StatCompleted != null) _downloadView.StatCompleted.Text = completed.ToString();
+                if (_downloadView.StatFailed != null) _downloadView.StatFailed.Text = failed.ToString();
+                if (_downloadView.StatSpeed != null) _downloadView.StatSpeed.Text = FormatBytes(totalSpeed) + "/s";
+                if (SpeedLabel != null) SpeedLabel.Text = running > 0 ? FormatBytes(totalSpeed) + "/s" : "--";
+            }
+            catch (Exception ex) { Logger.Warn("更新统计失败: " + ex.Message); }
+        }
+
+        private static string FormatBytes(long bytes)
+        {
+            string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+            double len = bytes;
+            int order = 0;
+            while (len >= 1024 && order < sizes.Length - 1) { order++; len /= 1024; }
+            return $"{len:0.#} {sizes[order]}";
         }
         #endregion
 

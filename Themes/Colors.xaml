@@ -2,46 +2,94 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
-    <!-- 天蓝色（默认）- HarmonyOS 6.0 风格 -->
-    <Color x:Key="PrimaryColor">#4a9eff</Color>
-    <Color x:Key="PrimaryDarkColor">#2d7be0</Color>
-    <Color x:Key="AccentColor">#80bdff</Color>
-    <Color x:Key="BackgroundTopColor">#f0f5ff</Color>
-    <Color x:Key="BackgroundBottomColor">#f5f9ff</Color>
-    <Color x:Key="TextColor">#1a1a2e</Color>
-    <Color x:Key="SubTextColor">#666680</Color>
-    <Color x:Key="BorderColor">#d0d8e8</Color>
-    <Color x:Key="HoverColor">#e8f0ff</Color>
-    <Color x:Key="SuccessColor">#4caf50</Color>
-    <Color x:Key="WarningColor">#ff9800</Color>
-    <Color x:Key="ErrorColor">#f44336</Color>
-    <Color x:Key="PausedColor">#ff9800</Color>
-    <Color x:Key="PressedColor">#334a9eff</Color>
-    <Color x:Key="SelectedRowColor">#204a9eff</Color>
-    <Color x:Key="CardBackgroundColor">#FFFFFF</Color>
-    <Color x:Key="AltRowBackgroundColor">#F5F5F5</Color>
+    <!-- ==================== 主色板 ==================== -->
+    <Color x:Key="PrimaryColor">#4F8BFF</Color>
+    <Color x:Key="PrimaryDarkColor">#2C6CE6</Color>
+    <Color x:Key="PrimarySoftColor">#88AFFF</Color>
+    <Color x:Key="AccentColor">#6EC6FF</Color>
+    <Color x:Key="Accent2Color">#A78BFA</Color>
 
+    <!-- ==================== 背景层级 ==================== -->
+    <Color x:Key="BackgroundTopColor">#F7F9FF</Color>
+    <Color x:Key="BackgroundBottomColor">#EEF2FB</Color>
+    <Color x:Key="SurfaceColor">#FFFFFF</Color>
+    <Color x:Key="SurfaceAltColor">#F9FAFE</Color>
+    <Color x:Key="SurfaceElevatedColor">#FFFFFF</Color>
+    <Color x:Key="SidebarTopColor">#F2F5FE</Color>
+    <Color x:Key="SidebarBottomColor">#E6EBFA</Color>
+
+    <!-- ==================== 文字 ==================== -->
+    <Color x:Key="TextColor">#15182B</Color>
+    <Color x:Key="TextSecondaryColor">#525873</Color>
+    <Color x:Key="SubTextColor">#8B91AC</Color>
+    <Color x:Key="TextOnPrimaryColor">#FFFFFF</Color>
+
+    <!-- ==================== 边框 / 分隔 ==================== -->
+    <Color x:Key="BorderColor">#E2E7F2</Color>
+    <Color x:Key="BorderStrongColor">#C8D0E4</Color>
+    <Color x:Key="DividerColor">#EDF0F8</Color>
+
+    <!-- ==================== 交互 ==================== -->
+    <Color x:Key="HoverColor">#1A4F8BFF</Color>
+    <Color x:Key="PressedColor">#334F8BFF</Color>
+    <Color x:Key="SelectedRowColor">#144F8BFF</Color>
+    <Color x:Key="FocusColor">#334F8BFF</Color>
+
+    <!-- ==================== 状态 ==================== -->
+    <Color x:Key="SuccessColor">#1BC982</Color>
+    <Color x:Key="WarningColor">#FF9F2E</Color>
+    <Color x:Key="ErrorColor">#FF5C6B</Color>
+    <Color x:Key="PausedColor">#FF9F2E</Color>
+    <Color x:Key="InfoColor">#4F8BFF</Color>
+
+    <!-- ==================== 阴影颜色 ==================== -->
+    <Color x:Key="ShadowColor">#1A15182B</Color>
+    <Color x:Key="ShadowSoftColor">#0D15182B</Color>
+    <Color x:Key="GlowColor">#334F8BFF</Color>
+
+    <!-- ==================== 笔刷 ==================== -->
     <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}"/>
     <SolidColorBrush x:Key="PrimaryDarkBrush" Color="{StaticResource PrimaryDarkColor}"/>
+    <SolidColorBrush x:Key="PrimarySoftBrush" Color="{StaticResource PrimarySoftColor}"/>
     <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}"/>
+    <SolidColorBrush x:Key="Accent2Brush" Color="{StaticResource Accent2Color}"/>
+
     <SolidColorBrush x:Key="BackgroundTopBrush" Color="{StaticResource BackgroundTopColor}"/>
     <SolidColorBrush x:Key="BackgroundBottomBrush" Color="{StaticResource BackgroundBottomColor}"/>
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}"/>
+    <SolidColorBrush x:Key="SurfaceAltBrush" Color="{StaticResource SurfaceAltColor}"/>
+    <SolidColorBrush x:Key="SurfaceElevatedBrush" Color="{StaticResource SurfaceElevatedColor}"/>
+    <SolidColorBrush x:Key="SidebarTopBrush" Color="{StaticResource SidebarTopColor}"/>
+    <SolidColorBrush x:Key="SidebarBottomBrush" Color="{StaticResource SidebarBottomColor}"/>
+
     <SolidColorBrush x:Key="TextBrush" Color="{StaticResource TextColor}"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}"/>
     <SolidColorBrush x:Key="SubTextBrush" Color="{StaticResource SubTextColor}"/>
+    <SolidColorBrush x:Key="TextOnPrimaryBrush" Color="{StaticResource TextOnPrimaryColor}"/>
+
     <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}"/>
-    <SolidColorBrush x:Key="HoverBrush" Color="#224a9eff"/>
+    <SolidColorBrush x:Key="BorderStrongBrush" Color="{StaticResource BorderStrongColor}"/>
+    <SolidColorBrush x:Key="DividerBrush" Color="{StaticResource DividerColor}"/>
+
+    <SolidColorBrush x:Key="HoverBrush" Color="{StaticResource HoverColor}"/>
     <SolidColorBrush x:Key="PressedBrush" Color="{StaticResource PressedColor}"/>
     <SolidColorBrush x:Key="SelectedRowBrush" Color="{StaticResource SelectedRowColor}"/>
-    <SolidColorBrush x:Key="CardBackground" Color="{StaticResource CardBackgroundColor}"/>
-    <SolidColorBrush x:Key="AltRowBackground" Color="{StaticResource AltRowBackgroundColor}"/>
+    <SolidColorBrush x:Key="FocusBrush" Color="{StaticResource FocusColor}"/>
+
     <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}"/>
     <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}"/>
     <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource ErrorColor}"/>
     <SolidColorBrush x:Key="PausedBrush" Color="{StaticResource PausedColor}"/>
+    <SolidColorBrush x:Key="InfoBrush" Color="{StaticResource InfoColor}"/>
 
-    <LinearGradientBrush x:Key="PrimaryGradientBrush" StartPoint="0,0" EndPoint="1,0">
+    <SolidColorBrush x:Key="ShadowBrush" Color="{StaticResource ShadowColor}"/>
+    <SolidColorBrush x:Key="ShadowSoftBrush" Color="{StaticResource ShadowSoftColor}"/>
+    <SolidColorBrush x:Key="GlowBrush" Color="{StaticResource GlowColor}"/>
+
+    <!-- ==================== 渐变 ==================== -->
+    <LinearGradientBrush x:Key="PrimaryGradientBrush" StartPoint="0,0" EndPoint="1,1">
         <GradientStop Color="{StaticResource PrimaryColor}" Offset="0"/>
-        <GradientStop Color="{StaticResource AccentColor}" Offset="1"/>
+        <GradientStop Color="{StaticResource Accent2Color}" Offset="1"/>
     </LinearGradientBrush>
 
     <LinearGradientBrush x:Key="HeaderGradientBrush" StartPoint="0,0" EndPoint="0,1">
@@ -49,12 +97,75 @@
         <GradientStop Color="{StaticResource BackgroundBottomColor}" Offset="1"/>
     </LinearGradientBrush>
 
-    <!-- 常用尺寸 -->
-    <sys:Double x:Key="TitleBarHeight">48</sys:Double>
-    <sys:Double x:Key="SidebarWidth">168</sys:Double>
-    <sys:Double x:Key="ButtonHeight">36</sys:Double>
-    <sys:Double x:Key="ControlHeight">36</sys:Double>
+    <LinearGradientBrush x:Key="SidebarGradientBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="{StaticResource SidebarTopColor}" Offset="0"/>
+        <GradientStop Color="{StaticResource SidebarBottomColor}" Offset="1"/>
+    </LinearGradientBrush>
 
-    <CornerRadius x:Key="ControlCornerRadius">6</CornerRadius>
-    <CornerRadius x:Key="CardCornerRadius">10</CornerRadius>
+    <LinearGradientBrush x:Key="BrandGradientBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#4F8BFF" Offset="0"/>
+        <GradientStop Color="#6EC6FF" Offset="0.5"/>
+        <GradientStop Color="#A78BFA" Offset="1"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="SuccessGradientBrush" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#1BC982" Offset="0"/>
+        <GradientStop Color="#4FE0A0" Offset="1"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="ErrorGradientBrush" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#FF5C6B" Offset="0"/>
+        <GradientStop Color="#FF8E5C" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- ==================== 装饰背景渐变（光晕） ==================== -->
+    <RadialGradientBrush x:Key="GlowTopLeftBrush" GradientOrigin="0,0" Center="0,0" RadiusX="0.6" RadiusY="0.6">
+        <GradientStop Color="#224F8BFF" Offset="0"/>
+        <GradientStop Color="#114F8BFF" Offset="0.6"/>
+        <GradientStop Color="Transparent" Offset="1"/>
+    </RadialGradientBrush>
+
+    <RadialGradientBrush x:Key="GlowBottomRightBrush" GradientOrigin="1,1" Center="1,1" RadiusX="0.7" RadiusY="0.7">
+        <GradientStop Color="#22A78BFA" Offset="0"/>
+        <GradientStop Color="#11A78BFA" Offset="0.6"/>
+        <GradientStop Color="Transparent" Offset="1"/>
+    </RadialGradientBrush>
+
+    <!-- ==================== 尺寸 / 间距 ==================== -->
+    <sys:Double x:Key="TitleBarHeight">52</sys:Double>
+    <sys:Double x:Key="SidebarWidth">232</sys:Double>
+    <sys:Double x:Key="SidebarCollapsedWidth">72</sys:Double>
+    <sys:Double x:Key="ButtonHeight">36</sys:Double>
+    <sys:Double x:Key="ControlHeight">40</sys:Double>
+    <sys:Double x:Key="InputHeight">40</sys:Double>
+    <sys:Double x:Key="StatusBarHeight">32</sys:Double>
+
+    <!-- ==================== 圆角 ==================== -->
+    <CornerRadius x:Key="ControlCornerRadius">8</CornerRadius>
+    <CornerRadius x:Key="ButtonCornerRadius">10</CornerRadius>
+    <CornerRadius x:Key="CardCornerRadius">14</CornerRadius>
+    <CornerRadius x:Key="BigCardCornerRadius">20</CornerRadius>
+    <CornerRadius x:Key="PillCornerRadius">20</CornerRadius>
+
+    <!-- ==================== 字体 ==================== -->
+    <FontFamily x:Key="UIFontFamily">Microsoft YaHei UI, Segoe UI, sans-serif</FontFamily>
+    <FontFamily x:Key="MonoFontFamily">Cascadia Mono, Consolas, monospace</FontFamily>
+
+    <sys:Double x:Key="FontSizeH1">26</sys:Double>
+    <sys:Double x:Key="FontSizeH2">18</sys:Double>
+    <sys:Double x:Key="FontSizeH3">15</sys:Double>
+    <sys:Double x:Key="FontSizeBody">13</sys:Double>
+    <sys:Double x:Key="FontSizeSmall">12</sys:Double>
+    <sys:Double x:Key="FontSizeTiny">11</sys:Double>
+
+    <!-- ==================== 阴影 DropShadowEffect ==================== -->
+    <DropShadowEffect x:Key="CardShadow" BlurRadius="24" ShadowDepth="2" Direction="270"
+                      Opacity="0.10" Color="{StaticResource ShadowColor}"/>
+    <DropShadowEffect x:Key="SoftShadow" BlurRadius="12" ShadowDepth="1" Direction="270"
+                      Opacity="0.06" Color="{StaticResource ShadowColor}"/>
+    <DropShadowEffect x:Key="HoverShadow" BlurRadius="20" ShadowDepth="4" Direction="270"
+                      Opacity="0.16" Color="{StaticResource ShadowColor}"/>
+    <DropShadowEffect x:Key="PrimaryGlow" BlurRadius="20" ShadowDepth="0" Direction="0"
+                      Opacity="0.35" Color="{StaticResource PrimaryColor}"/>
+
 </ResourceDictionary>
