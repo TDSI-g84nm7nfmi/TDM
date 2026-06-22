@@ -14,6 +14,9 @@
         WindowStartupLocation="CenterScreen"
         Style="{StaticResource MainWindowStyle}"
         Background="Transparent"
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        AllowsTransparency="True"
         AllowDrop="True"
         Drop="OnWindowDrop"
         DragEnter="OnWindowDragEnter">
@@ -23,7 +26,9 @@
     </Window.TaskbarItemInfo>
 
     <Border CornerRadius="14" Background="{StaticResource BackgroundBottomBrush}"
-            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+            MouseLeftButtonDown="OnBorderMouseLeftButtonDown"
+            MouseMove="OnBorderMouseMove">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="52"/>
@@ -141,7 +146,7 @@
                                 <Path Width="18" Height="18" Stretch="Uniform"
                                       Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                                       StrokeThickness="1.6" Fill="Transparent"
-                                      Data="M4,4 H16 V16 H4 Z M4,4 L16,16 M16,4 L4,16"/>
+                                      Data="M4,4 H16 V16 H4 Z"/>
                             </Button>
                             <!-- 关闭 -->
                             <Button x:Name="CloseButton" Style="{StaticResource IconButton}" ToolTip="关闭"
@@ -225,15 +230,7 @@
                         <ListBox x:Name="NavList" Style="{StaticResource SidebarListBox}"
                                  SelectionChanged="OnNavChanged" BorderThickness="0"
                                  Margin="0,0,0,8" Background="Transparent">
-                            <ListBoxItem x:Name="NavWelcome" Tag="welcome">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Path Width="18" Height="18" Stretch="Uniform"
-                                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
-                                          Data="M12,2 A10,10 0 1 0 12,22 A10,10 0 1 0 12,2 M12,6 v6 l4,2"/>
-                                    <TextBlock Text="欢迎" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="14"/>
-                                </StackPanel>
-                            </ListBoxItem>
-                            <ListBoxItem x:Name="NavDownload" Tag="download">
+                            <ListBoxItem x:Name="NavDownload" IsSelected="True" Tag="download">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <Path Width="18" Height="18" Stretch="Uniform"
                                           Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"

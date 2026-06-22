@@ -163,6 +163,20 @@ namespace TDM.ViewModels
             }
         }
 
+        private string _closeAction = SettingsService.Current.CloseAction ?? "ask";
+        public string CloseAction
+        {
+            get => _closeAction;
+            set
+            {
+                if (SetProperty(ref _closeAction, value))
+                {
+                    SettingsService.Update(s => s.CloseAction = value);
+                    SettingsService.Save();
+                }
+            }
+        }
+
         public ICommand BrowseCommand { get; }
         public ICommand OpenDataFolderCommand { get; }
         public ICommand OpenLogFolderCommand { get; }

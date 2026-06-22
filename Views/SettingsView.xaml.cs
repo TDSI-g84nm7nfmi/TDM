@@ -28,6 +28,19 @@ namespace TDM.Views
                         break;
                     }
                 }
+                // 同步 ComboBox 选中项
+                try
+                {
+                    foreach (var item in CloseActionBox.Items)
+                    {
+                        if (item is System.Windows.Controls.ComboBoxItem cbi && (cbi.Tag as string) == ViewModel.CloseAction)
+                        {
+                            CloseActionBox.SelectedItem = cbi;
+                            break;
+                        }
+                    }
+                }
+                catch { }
             };
         }
 
@@ -49,6 +62,18 @@ namespace TDM.Views
         }
 
         private void RadioButton_Checked(object sender, RoutedEventArgs e) { }
+
+        private void OnCloseActionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            try
+            {
+                if (CloseActionBox?.SelectedItem is System.Windows.Controls.ComboBoxItem cbi && cbi.Tag is string tag)
+                {
+                    ViewModel.CloseAction = tag;
+                }
+            }
+            catch (Exception ex) { Logger.Warn("更新关闭行为设置失败: " + ex.Message); }
+        }
 
         private void OnThemeChanged(object sender, RoutedEventArgs e)
         {

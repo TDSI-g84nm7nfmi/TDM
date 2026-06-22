@@ -27,7 +27,7 @@ namespace TDM
         private DownloadView? _downloadView;
         private HistoryView? _historyView;
         private SettingsView? _settingsView;
-        private WelcomeView? _welcomeView;
+        private LoadingView? _loadingView;
 
         private NotifyIcon? _trayIcon;
         private ContextMenuStrip? _trayMenu;
@@ -54,11 +54,17 @@ namespace TDM
             DataContext = this;
 
             // 启动视图（在构造时就创建，捕获异常；这样 XAML 中 IsSelected 触发 SelectionChanged 时不会 NRE）
-            _welcomeView = SafeCreate(() => new WelcomeView());
+            // 默认显示加载动画（避免 XAML 加载阶段用户看到白屏）
+            _loadingView = SafeCreate(() => new LoadingView());
             _downloadView = SafeCreate(() => new DownloadView());
             _historyView = SafeCreate(() => new HistoryView());
             _settingsView = SafeCreate(() => new SettingsView());
-            if (ViewHost != null) ViewHost.Content = _welcomeView;
+            if (ViewHost != null && _loadingView != null)
+            {
+                ViewHost.Content = _loadingView;
+                _loadingView.Start();
+                _loadingView.SetStatus("正在启动 TDM...");
+            }
 
             // 应用图标（在 Loaded 之后才安全设置）
             SourceInitialized += (_, _) =>
@@ -158,6 +164,20 @@ namespace TDM
 
                 // 启动统计定时器（1s 刷新仪表板）
                 try { StartStatsTimer(); } catch { }
+
+                // 加载动画最短展示 600ms（避免闪一下就消失），然后切到主视图
+                _loadingView?.SetStatus("正在准备下载环境...");
+                var startTime = DateTime.UtcNow;
+                var minShow = TimeSpan.FromMilliseconds(600);
+                var remaining = minShow - (DateTime.UtcNow - startTime);
+                if (remaining < TimeSpan.Zero) remaining = TimeSpan.Zero;
+                var timer = new DispatcherTimer { Interval = remaining };
+                timer.Tick += (_, _) =>
+                {
+                    try { timer.Stop(); } catch { }
+                    SwitchToMainView();
+                };
+                timer.Start();
             };
         }
 
@@ -215,11 +235,10 @@ namespace TDM
 
         private void OnNavChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (NavWelcome == null || ViewHost == null) return;
+            if (ViewHost == null) return;
 
             FrameworkElement? nextView = null;
-            if (NavWelcome.IsSelected) nextView = _welcomeView;
-            else if (NavDownload.IsSelected) nextView = _downloadView;
+            if (NavDownload.IsSelected) nextView = _downloadView;
             else if (NavHistory.IsSelected)
             {
                 _historyView?.Refresh();
@@ -252,6 +271,183 @@ namespace TDM
                 ViewHost.Content = nextView;
             }
         }
+
+        /// <summary>初始化完成时调用：从加载动画切到主下载视图</summary>
+        private void SwitchToMainView()
+        {
+            if (ViewHost == null || _downloadView == null) return;
+            _loadingView?.Stop();
+            _loadingView = null;
+            ViewHost.Content = _downloadView;
+            // 默认选中"下载任务"
+            if (NavDownload != null) NavDownload.IsSelected = true;
+        }
+
+        #region 标题栏拖动 + 边缘缩放（WindowStyle=None 时需要手动实现）
+        private bool _dragMoved = false;
+        private Point _dragStart;
+        private Point _dragMouseStart;
+        private ResizeDirection _resizeDir = ResizeDirection.None;
+        private enum ResizeDirection { None, Left, Right, Top, Bottom, TopLeft, TopRight, BottomLeft, BottomRight }
+
+        private void OnBorderMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                if (e.LeftButton != MouseButtonState.Pressed) return;
+                var pos = e.GetPosition(this);
+                _resizeDir = HitTestResize(pos);
+                if (_resizeDir != ResizeDirection.None)
+                {
+                    _dragMouseStart = PointToScreen(pos);
+                    _dragStart = new Point(Width, Height);
+                    MouseMove += OnResizeMouseMove;
+                    MouseLeftButtonUp += OnResizeMouseUp;
+                    CaptureMouse();
+                    e.Handled = true;
+                    return;
+                }
+
+                // 只在标题栏/品牌区才能拖动（避免误操作）
+                var source = e.OriginalSource as DependencyObject;
+                if (IsInTitleBar(source))
+                {
+                    _dragMoved = false;
+                    _dragMouseStart = PointToScreen(pos);
+                    _dragStart = new Point(Left, Top);
+                    MouseMove += OnDragMouseMove;
+                    MouseLeftButtonUp += OnDragMouseUp;
+                    CaptureMouse();
+                    e.Handled = true;
+                }
+            }
+            catch { }
+        }
+
+        private bool IsInTitleBar(DependencyObject? d)
+        {
+            // 命中测试：是否在标题栏/品牌区（不响应按钮）
+            if (d == null) return false;
+            var cur = d;
+            while (cur != null)
+            {
+                if (cur is Button) return false;
+                if (cur is TextBox) return false;
+                if (cur is ListBox) return false;
+                cur = System.Windows.Media.VisualTreeHelper.GetParent(cur);
+            }
+            return true;
+        }
+
+        private ResizeDirection HitTestResize(Point p)
+        {
+            const double edge = 6;
+            bool left = p.X <= edge;
+            bool right = p.X >= ActualWidth - edge;
+            bool top = p.Y <= edge;
+            bool bottom = p.Y >= ActualHeight - edge;
+            if (WindowState == WindowState.Maximized) return ResizeDirection.None;
+            if (top && left) return ResizeDirection.TopLeft;
+            if (top && right) return ResizeDirection.TopRight;
+            if (bottom && left) return ResizeDirection.BottomLeft;
+            if (bottom && right) return ResizeDirection.BottomRight;
+            if (left) return ResizeDirection.Left;
+            if (right) return ResizeDirection.Right;
+            if (top) return ResizeDirection.Top;
+            if (bottom) return ResizeDirection.Bottom;
+            return ResizeDirection.None;
+        }
+
+        private void OnBorderMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            try
+            {
+                if (e.LeftButton == MouseButtonState.Pressed) return; // 拖动中由专门处理器接管
+                var dir = HitTestResize(e.GetPosition(this));
+                Cursor = dir switch
+                {
+                    ResizeDirection.Left or ResizeDirection.Right => System.Windows.Input.Cursors.SizeWE,
+                    ResizeDirection.Top or ResizeDirection.Bottom => System.Windows.Input.Cursors.SizeNS,
+                    ResizeDirection.TopLeft or ResizeDirection.BottomRight => System.Windows.Input.Cursors.SizeNWSE,
+                    ResizeDirection.TopRight or ResizeDirection.BottomLeft => System.Windows.Input.Cursors.SizeNESW,
+                    _ => null,
+                };
+            }
+            catch { }
+        }
+
+        private void OnDragMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            try
+            {
+                if (e.LeftButton != MouseButtonState.Pressed) return;
+                var cur = PointToScreen(e.GetPosition(this));
+                var dx = cur.X - _dragMouseStart.X;
+                var dy = cur.Y - _dragMouseStart.Y;
+                if (!_dragMoved && Math.Abs(dx) < 4 && Math.Abs(dy) < 4) return;
+                _dragMoved = true;
+                // 双击还原
+                Left = _dragStart.X + dx;
+                Top = _dragStart.Y + dy;
+            }
+            catch { }
+        }
+
+        private void OnDragMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                MouseMove -= OnDragMouseMove;
+                MouseLeftButtonUp -= OnDragMouseUp;
+                ReleaseMouseCapture();
+            }
+            catch { }
+        }
+
+        private void OnResizeMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            try
+            {
+                if (e.LeftButton != MouseButtonState.Pressed) return;
+                var cur = PointToScreen(e.GetPosition(this));
+                var dx = cur.X - _dragMouseStart.X;
+                var dy = cur.Y - _dragMouseStart.Y;
+                double newW = _dragStart.X;
+                double newH = _dragStart.Y;
+                double newL = Left;
+                double newT = Top;
+                if (_resizeDir == ResizeDirection.Right || _resizeDir == ResizeDirection.TopRight || _resizeDir == ResizeDirection.BottomRight) newW = Math.Max(MinWidth, _dragStart.X + dx);
+                if (_resizeDir == ResizeDirection.Bottom || _resizeDir == ResizeDirection.BottomLeft || _resizeDir == ResizeDirection.BottomRight) newH = Math.Max(MinHeight, _dragStart.Y + dy);
+                if (_resizeDir == ResizeDirection.Left || _resizeDir == ResizeDirection.TopLeft || _resizeDir == ResizeDirection.BottomLeft)
+                {
+                    newW = Math.Max(MinWidth, _dragStart.X - dx);
+                    newL = Left + (_dragStart.X - newW);
+                }
+                if (_resizeDir == ResizeDirection.Top || _resizeDir == ResizeDirection.TopLeft || _resizeDir == ResizeDirection.TopRight)
+                {
+                    newH = Math.Max(MinHeight, _dragStart.Y - dy);
+                    newT = Top + (_dragStart.Y - newH);
+                }
+                Width = newW;
+                Height = newH;
+                Left = newL;
+                Top = newT;
+            }
+            catch { }
+        }
+
+        private void OnResizeMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                MouseMove -= OnResizeMouseMove;
+                MouseLeftButtonUp -= OnResizeMouseUp;
+                ReleaseMouseCapture();
+                _resizeDir = ResizeDirection.None;
+            }
+            catch { }
+        }
+        #endregion
 
         #region 拖放支持
         private void OnWindowDragEnter(object sender, System.Windows.DragEventArgs e)
@@ -487,23 +683,70 @@ namespace TDM
 
         protected override void OnClosing(CancelEventArgs e)
         {
-            if (!_userClosed && SettingsService.Current.MinimizeToTray)
+            if (_userClosed) { base.OnClosing(e); return; }
+
+            var action = SettingsService.Current.CloseAction ?? "ask";
+            if (action == "tray")
             {
                 e.Cancel = true;
-                if (_trayIcon != null && !_trayIcon.Visible) _trayIcon.Visible = true;
-                Hide();
-                _trayIcon?.ShowBalloonTip(1500, "TDM", "TDM 仍在后台运行", System.Windows.Forms.ToolTipIcon.Info);
+                HideToTray();
+                return;
+            }
+            if (action == "exit")
+            {
+                e.Cancel = true;
+                AnimateExit(() => { _userClosed = true; DisposeTray(); Application.Current.Shutdown(); });
                 return;
             }
 
-            // 真正的关闭 → 先播放退出动画
+            // 首次/询问模式：弹窗让用户选
             e.Cancel = true;
-            AnimateExit(() =>
+            var choice = ShowCloseChoiceDialog();
+            if (choice == CloseChoice.Cancel) return;
+            if (choice == CloseChoice.MinimizeToTray) { HideToTray(); return; }
+
+            // 退出
+            AnimateExit(() => { _userClosed = true; DisposeTray(); Application.Current.Shutdown(); });
+        }
+
+        private void HideToTray()
+        {
+            try
             {
-                _userClosed = true;
-                DisposeTray();
-                Application.Current.Shutdown();
-            });
+                if (_trayIcon != null && !_trayIcon.Visible) _trayIcon.Visible = true;
+                Hide();
+                _trayIcon?.ShowBalloonTip(1500, "TDM", "TDM 仍在后台运行", System.Windows.Forms.ToolTipIcon.Info);
+            }
+            catch (Exception ex) { Logger.Warn("最小化到托盘失败: " + ex.Message); }
+        }
+
+        private enum CloseChoice { Cancel, MinimizeToTray, Exit }
+
+        private CloseChoice ShowCloseChoiceDialog()
+        {
+            try
+            {
+                var dlg = new TDM.Windows.CloseChoiceWindow
+                {
+                    Owner = this
+                };
+                var ok = dlg.ShowDialog() == true;
+                if (!ok) return CloseChoice.Cancel;
+
+                // 保存"不再询问"选择
+                var action = dlg.RememberChoice ? dlg.SelectedAction : "ask";
+                if (dlg.RememberChoice)
+                {
+                    Services.SettingsService.Update(s => s.CloseAction = action);
+                    Services.SettingsService.Save();
+                }
+                return action == "tray" ? CloseChoice.MinimizeToTray : CloseChoice.Exit;
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn("关闭对话框失败: " + ex.Message);
+                return CloseChoice.Cancel;
+            }
         }
 
         private void DisposeTray()

@@ -7,9 +7,6 @@
              mc:Ignorable="d"
              d:DesignHeight="700" d:DesignWidth="700"
              Background="Transparent">
-    <UserControl.DataContext>
-        <vm:SettingsViewModel/>
-    </UserControl.DataContext>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24,20,24,16">
         <StackPanel MaxWidth="720" HorizontalAlignment="Stretch">
@@ -104,8 +101,19 @@
                     <TextBlock Text="行为" Style="{StaticResource GroupTitle}" Margin="0,0,0,12"/>
                     <CheckBox Style="{StaticResource ModernCheckBox}" Content="自动检测剪贴板中的下载链接"
                               IsChecked="{Binding EnableClipboard}" Margin="0,0,0,10"/>
-                    <CheckBox Style="{StaticResource ModernCheckBox}" Content="关闭窗口时最小化到系统托盘"
-                              IsChecked="{Binding MinimizeToTray}" Margin="0,0,0,10"/>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="点击关闭按钮时" Style="{StaticResource BodySecondary}" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Column="1" x:Name="CloseActionBox" Width="200"
+                                  SelectedValue="{Binding CloseAction}" SelectionChanged="OnCloseActionChanged">
+                            <ComboBoxItem Content="每次询问" Tag="ask"/>
+                            <ComboBoxItem Content="最小化到托盘" Tag="tray"/>
+                            <ComboBoxItem Content="直接退出" Tag="exit"/>
+                        </ComboBox>
+                    </Grid>
                     <CheckBox Style="{StaticResource ModernCheckBox}" Content="下载完成时显示通知"
                               IsChecked="{Binding NotifyFinished}" Margin="0,0,0,10"/>
                     <CheckBox Style="{StaticResource ModernCheckBox}" Content="下载出错时显示通知"
@@ -119,7 +127,7 @@
             <Border Style="{StaticResource CardBorder}" Margin="0,0,0,14" Padding="22,18">
                 <StackPanel>
                     <TextBlock Text="浏览器扩展" Style="{StaticResource GroupTitle}" Margin="0,0,0,10"/>
-                    <TextBlock TextWrapping="Wrap" Foreground="{StaticResource BodySecondary}" FontSize="12" Margin="0,0,0,10" LineHeight="20">
+                    <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,10" LineHeight="20">
                         TDM 启动时会自动扫描系统中的 Chromium 内核浏览器（Chrome、Edge、Tabbit、Brave、Vivaldi、Opera、360 极速、QQ 浏览器、Yandex、Cent Browser 等），询问是否安装扩展接管所有下载。
                     </TextBlock>
                     <CheckBox x:Name="ScanOnStartupCheck" Content="启动时自动扫描浏览器"
