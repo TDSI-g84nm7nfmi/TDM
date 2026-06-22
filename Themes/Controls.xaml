@@ -399,6 +399,35 @@
     </Style>
 
     <!-- ====================== 滑块 ====================== -->
+    <!-- 注意：RepeatButton/Thumb 子样式必须先于 ModernSlider 定义，
+         WPF 在同字典内前向 StaticResource 解析不稳定 -->
+    <Style x:Key="SliderRepeatButtonStyle" TargetType="RepeatButton">
+        <Setter Property="OverridesDefaultStyle" Value="True"/>
+        <Setter Property="IsTabStop" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RepeatButton">
+                    <Border Background="{TemplateBinding Background}" Height="6" CornerRadius="3"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="SliderThumbStyle" TargetType="Thumb">
+        <Setter Property="OverridesDefaultStyle" Value="True"/>
+        <Setter Property="Height" Value="18"/>
+        <Setter Property="Width" Value="18"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Ellipse Width="18" Height="18" Fill="White"
+                             Stroke="{StaticResource PrimaryBrush}" StrokeThickness="2.5"
+                             Effect="{StaticResource SoftShadow}"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="ModernSlider" TargetType="Slider">
         <Setter Property="Minimum" Value="0"/>
         <Setter Property="Maximum" Value="100"/>
@@ -426,33 +455,6 @@
                             </Track.Thumb>
                         </Track>
                     </Grid>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <Style x:Key="SliderRepeatButtonStyle" TargetType="RepeatButton">
-        <Setter Property="OverridesDefaultStyle" Value="True"/>
-        <Setter Property="IsTabStop" Value="False"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="RepeatButton">
-                    <Border Background="{TemplateBinding Background}" Height="6" CornerRadius="3"/>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <Style x:Key="SliderThumbStyle" TargetType="Thumb">
-        <Setter Property="OverridesDefaultStyle" Value="True"/>
-        <Setter Property="Height" Value="18"/>
-        <Setter Property="Width" Value="18"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Thumb">
-                    <Ellipse Width="18" Height="18" Fill="White"
-                             Stroke="{StaticResource PrimaryBrush}" StrokeThickness="2.5"
-                             Effect="{StaticResource SoftShadow}"/>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
