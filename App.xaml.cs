@@ -115,13 +115,22 @@ namespace TDM
             base.OnExit(e);
         }
 
+        // 防止异常处理器自身抛异常时陷入递归 MessageBox 风暴
+        private bool _showingError = false;
         private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
         {
-            Logger.Error("UI 线程未处理异常", e.Exception);
-            MessageBox.Show(
-                $"发生未处理异常：{e.Exception.Message}\n\n程序将继续运行。",
-                AppName, MessageBoxButton.OK, MessageBoxImage.Error);
-            e.Handled = true;
+            try
+            {
+                Logger.Error("UI 线程未处理异常", e.Exception);
+                if (_showingError) { e.Handled = true; return; }
+                _showingError = true;
+                MessageBox.Show(
+                    $"发生未处理异常：{e.Exception.Message}\n\n程序将继续运行。",
+                    AppName, MessageBoxButton.OK, MessageBoxImage.Error);
+                _showingError = false;
+            }
+            catch { }
+            finally { e.Handled = true; }
         }
 
         private void OnDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)

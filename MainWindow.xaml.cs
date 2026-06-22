@@ -115,6 +115,8 @@ namespace TDM
                     {
                         var bridge = Bridge.ExtensionBridgeServer.Instance;
                         if (!bridge.IsRunning) bridge.Start();
+                        bridge.OnConnectionChanged += OnExtensionConnectionChanged;
+                        UpdateExtensionStatus(bridge.IsConnected);
                     }
                     catch (Exception ex) { Logger.Warn("ExtensionBridgeServer 启动失败: " + ex.Message); }
 
@@ -214,14 +216,41 @@ namespace TDM
         private void OnNavChanged(object sender, SelectionChangedEventArgs e)
         {
             if (NavWelcome == null || ViewHost == null) return;
-            if (NavWelcome.IsSelected) ViewHost.Content = _welcomeView;
-            else if (NavDownload.IsSelected) ViewHost.Content = _downloadView;
+
+            FrameworkElement? nextView = null;
+            if (NavWelcome.IsSelected) nextView = _welcomeView;
+            else if (NavDownload.IsSelected) nextView = _downloadView;
             else if (NavHistory.IsSelected)
             {
                 _historyView?.Refresh();
-                ViewHost.Content = _historyView;
+                nextView = _historyView;
             }
-            else if (NavSettings.IsSelected) ViewHost.Content = _settingsView;
+            else if (NavSettings.IsSelected) nextView = _settingsView;
+            if (nextView == null) return;
+
+            // 视图切换淡入淡出动画（Windows 11 Fluent 风格）
+            if (ViewHost.Content is FrameworkElement current && current != nextView)
+            {
+                var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(140))
+                {
+                    EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut }
+                };
+                fadeOut.Completed += (_, _) =>
+                {
+                    ViewHost.Content = nextView;
+                    nextView.Opacity = 0;
+                    var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(220))
+                    {
+                        EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut }
+                    };
+                    nextView.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+                };
+                current.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+            }
+            else
+            {
+                ViewHost.Content = nextView;
+            }
         }
 
         #region 拖放支持
@@ -395,6 +424,30 @@ namespace TDM
             Hide();
         }
 
+        private void OnMaximizeClick(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (WindowState == WindowState.Maximized)
+                {
+                    WindowState = WindowState.Normal;
+                    if (MaximizeButton != null) MaximizeButton.ToolTip = "最大化";
+                }
+                else
+                {
+                    WindowState = WindowState.Maximized;
+                    if (MaximizeButton != null) MaximizeButton.ToolTip = "向下还原";
+                }
+            }
+            catch (Exception ex) { Logger.Warn("最大化切换失败: " + ex.Message); }
+        }
+
+        private void OnCloseClick(object sender, RoutedEventArgs e)
+        {
+            // 复用现有关闭逻辑（托盘化或真正退出）
+            Close();
+        }
+
         private void OnAboutClick(object sender, RoutedEventArgs e) => ShowAbout();
 
         public void ShowAbout()
@@ -525,6 +578,31 @@ namespace TDM
                 SetStatus("请在设置中扫描并安装浏览器扩展", 3000);
             }
             catch (Exception ex) { Logger.Warn("跳转设置失败: " + ex.Message); }
+        }
+
+        private void OnExtensionConnectionChanged(bool connected)
+        {
+            try { Dispatcher.Invoke(() => UpdateExtensionStatus(connected)); }
+            catch { }
+        }
+
+        private void UpdateExtensionStatus(bool connected)
+        {
+            try
+            {
+                if (ExtStatusDot == null || ExtStatusText == null) return;
+                if (connected)
+                {
+                    ExtStatusDot.Fill = new SolidColorBrush(Color.FromRgb(0x1B, 0xC9, 0x82));
+                    ExtStatusText.Text = "扩展已连接";
+                }
+                else
+                {
+                    ExtStatusDot.Fill = new SolidColorBrush(Color.FromRgb(0xC9, 0x9A, 0x1B));
+                    ExtStatusText.Text = "扩展未安装";
+                }
+            }
+            catch { }
         }
 
         // 实时刷新统计卡（每 1 秒）

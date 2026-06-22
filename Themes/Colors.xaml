@@ -103,9 +103,9 @@
     </LinearGradientBrush>
 
     <LinearGradientBrush x:Key="BrandGradientBrush" StartPoint="0,0" EndPoint="1,1">
-        <GradientStop Color="#4F8BFF" Offset="0"/>
-        <GradientStop Color="#6EC6FF" Offset="0.5"/>
-        <GradientStop Color="#A78BFA" Offset="1"/>
+        <GradientStop Color="{StaticResource PrimaryColor}" Offset="0"/>
+        <GradientStop Color="{StaticResource AccentColor}" Offset="0.5"/>
+        <GradientStop Color="{StaticResource Accent2Color}" Offset="1"/>
     </LinearGradientBrush>
 
     <LinearGradientBrush x:Key="SuccessGradientBrush" StartPoint="0,0" EndPoint="1,0">
