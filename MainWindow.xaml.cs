@@ -235,16 +235,18 @@ namespace TDM
 
         private void OnNavChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (ViewHost == null) return;
+            // 防御：XAML 解析阶段 IsSelected=True 触发本事件时，部分字段（NavList 项、ViewHost）
+            // 可能尚未通过 x:Name 注入，访问它们会 NRE。此时直接返回，等 Loaded 后再正常处理。
+            if (ViewHost == null || NavList == null) return;
 
             FrameworkElement? nextView = null;
-            if (NavDownload.IsSelected) nextView = _downloadView;
-            else if (NavHistory.IsSelected)
+            if (NavDownload != null && NavDownload.IsSelected) nextView = _downloadView;
+            else if (NavHistory != null && NavHistory.IsSelected)
             {
                 _historyView?.Refresh();
                 nextView = _historyView;
             }
-            else if (NavSettings.IsSelected) nextView = _settingsView;
+            else if (NavSettings != null && NavSettings.IsSelected) nextView = _settingsView;
             if (nextView == null) return;
 
             // 视图切换淡入淡出动画（Windows 11 Fluent 风格）

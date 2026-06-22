@@ -19,7 +19,8 @@ namespace TDM.Bridge
     public class ExtensionBridgeServer : IDisposable
     {
         private const int Port = 19199;
-        private const string Path = "/tdm";
+        // HttpListener 要求 URI 前缀必须以 / 结尾
+        private const string Path = "/tdm/";
 
         /// <summary>全局单例</summary>
         public static ExtensionBridgeServer Instance { get; } = new();
