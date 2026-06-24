@@ -21,7 +21,8 @@
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
             <Border Width="40" Height="40" CornerRadius="20"
                     Background="{StaticResource PrimaryBrush}" Margin="0,0,12,0">
-                <TextBlock Text="🧩" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Path Width="22" Height="22" Stretch="Uniform" Fill="White" Data="{StaticResource IconPuzzle}"
+                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <StackPanel VerticalAlignment="Center">
                 <TextBlock Text="检测到浏览器" FontSize="18" FontWeight="Bold"
@@ -34,12 +35,22 @@
 
         <!-- 操作按钮 -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12">
-            <Button x:Name="OpenExtFolderButton" Content="📂 打开扩展目录"
+            <Button x:Name="OpenExtFolderButton"
                     Style="{StaticResource FlatButton}" Padding="14,6" Margin="0,0,8,0"
-                    Click="OnOpenExtFolder" ToolTip="打开资源管理器定位扩展文件夹"/>
-            <Button x:Name="OpenHelpButton" Content="📖 查看加载说明"
+                    Click="OnOpenExtFolder" ToolTip="打开资源管理器定位扩展文件夹">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Path Width="14" Height="14" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="{StaticResource IconFolder}" Margin="0,0,5,0"/>
+                    <TextBlock Text="打开扩展目录" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <Button x:Name="OpenHelpButton"
                     Style="{StaticResource FlatButton}" Padding="14,6"
-                    Click="OnOpenHelp" ToolTip="打开浏览器扩展加载的详细说明"/>
+                    Click="OnOpenHelp" ToolTip="打开浏览器扩展加载的详细说明">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Path Width="14" Height="14" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="{StaticResource IconInfo}" Margin="0,0,5,0"/>
+                    <TextBlock Text="查看加载说明" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
         </StackPanel>
 
         <!-- 状态摘要 -->
@@ -70,10 +81,20 @@
 
         <!-- 底部按钮 -->
         <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
-            <Button x:Name="SkipButton" Content="稍后再说" Style="{StaticResource FlatButton}"
-                    Padding="16,6" Margin="0,0,8,0" Click="OnSkip"/>
-            <Button x:Name="InstallButton" Content="为所选浏览器安装" Style="{StaticResource PrimaryButton}"
-                    Padding="16,6" Click="OnInstall"/>
+            <Button x:Name="SkipButton" Style="{StaticResource FlatButton}"
+                    Padding="16,6" Margin="0,0,8,0" Click="OnSkip">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Path Width="14" Height="14" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.6" Fill="Transparent" Data="{StaticResource IconCancel}" Margin="0,0,5,0"/>
+                    <TextBlock Text="稍后再说" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <Button x:Name="InstallButton" Style="{StaticResource PrimaryButton}"
+                    Padding="16,6" Click="OnInstall">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Path Width="14" Height="14" Stretch="Uniform" Fill="White" Data="{StaticResource IconPuzzle}" Margin="0,0,5,0"/>
+                    <TextBlock Text="为所选浏览器安装" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
         </StackPanel>
     </Grid>
 </Window>

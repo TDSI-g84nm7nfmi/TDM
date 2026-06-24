@@ -48,18 +48,43 @@
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="过滤：" VerticalAlignment="Center"
                            Foreground="{StaticResource SubTextBrush}" Margin="0,0,8,0"/>
-                <ToggleButton x:Name="FilterInfo" Content="INFO" Tag="INFO" Margin="0,0,6,0"
-                              IsChecked="True" Style="{StaticResource LogFilterToggle}"/>
-                <ToggleButton x:Name="FilterWarn" Content="WARN" Tag="WARN" Margin="0,0,6,0"
-                              IsChecked="True" Style="{StaticResource LogFilterToggle}"/>
-                <ToggleButton x:Name="FilterError" Content="ERROR" Tag="ERROR" Margin="0,0,6,0"
-                              IsChecked="True" Style="{StaticResource LogFilterToggle}"/>
-                <ToggleButton x:Name="FilterDebug" Content="DEBUG" Tag="DEBUG" Margin="0,0,12,0"
-                              IsChecked="True" Style="{StaticResource LogFilterToggle}"/>
+                <ToggleButton x:Name="FilterInfo" Tag="INFO" Margin="0,0,6,0"
+                              IsChecked="True" Style="{StaticResource LogFilterToggle}">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Path Width="10" Height="10" Stretch="Uniform" Fill="White" Data="{StaticResource IconInfoSmall}" Margin="0,0,4,0"/>
+                        <TextBlock Text="INFO" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </ToggleButton>
+                <ToggleButton x:Name="FilterWarn" Tag="WARN" Margin="0,0,6,0"
+                              IsChecked="True" Style="{StaticResource LogFilterToggle}">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Path Width="10" Height="10" Stretch="Uniform" Fill="White" Data="{StaticResource IconWarn}" Margin="0,0,4,0"/>
+                        <TextBlock Text="WARN" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </ToggleButton>
+                <ToggleButton x:Name="FilterError" Tag="ERROR" Margin="0,0,6,0"
+                              IsChecked="True" Style="{StaticResource LogFilterToggle}">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Path Width="10" Height="10" Stretch="Uniform" Fill="White" Data="{StaticResource IconError}" Margin="0,0,4,0"/>
+                        <TextBlock Text="ERROR" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </ToggleButton>
+                <ToggleButton x:Name="FilterDebug" Tag="DEBUG" Margin="0,0,12,0"
+                              IsChecked="True" Style="{StaticResource LogFilterToggle}">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Path Width="10" Height="10" Stretch="Uniform" Fill="White" Data="{StaticResource IconBug}" Margin="0,0,4,0"/>
+                        <TextBlock Text="DEBUG" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </ToggleButton>
                 <TextBox x:Name="SearchBox" Width="200" Style="{StaticResource ModernTextBox}"
                          ToolTip="搜索关键字（高亮显示）"/>
-                <Button x:Name="ClearLogButton" Content="清屏" Margin="6,0,0,0"
-                        Style="{StaticResource FlatButton}" Padding="12,4" Click="OnClearLog"/>
+                <Button x:Name="ClearLogButton" Margin="6,0,0,0"
+                        Style="{StaticResource FlatButton}" Padding="12,4" Click="OnClearLog">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Path Width="12" Height="12" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="{StaticResource IconTrash}" Margin="0,0,4,0"/>
+                        <TextBlock Text="清屏" VerticalAlignment="Center" FontSize="12"/>
+                    </StackPanel>
+                </Button>
             </StackPanel>
         </Border>
 
@@ -89,15 +114,30 @@
                                Foreground="{StaticResource SubTextBrush}" Margin="16,0,0,0"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <Button x:Name="OpenFolderButton" Content="打开日志目录"
+                    <Button x:Name="OpenFolderButton"
                             Style="{StaticResource FlatButton}" Padding="12,4" Margin="0,0,6,0"
-                            Click="OnOpenFolder"/>
-                    <Button x:Name="CopyButton" Content="复制全部"
+                            Click="OnOpenFolder">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Path Width="12" Height="12" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="{StaticResource IconFolder}" Margin="0,0,4,0"/>
+                            <TextBlock Text="打开日志目录" VerticalAlignment="Center" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="CopyButton"
                             Style="{StaticResource PrimaryButton}" Padding="12,4" Margin="0,0,6,0"
-                            Click="OnCopyAll"/>
-                    <Button x:Name="CloseButton" Content="关闭"
+                            Click="OnCopyAll">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Path Width="12" Height="12" Stretch="Uniform" Fill="White" Data="{StaticResource IconCopy}" Margin="0,0,4,0"/>
+                            <TextBlock Text="复制全部" VerticalAlignment="Center" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="CloseButton"
                             Style="{StaticResource FlatButton}" Padding="12,4"
-                            Click="OnCloseClick"/>
+                            Click="OnCloseClick">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Path Width="12" Height="12" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.8" Fill="Transparent" Data="{StaticResource IconClose}" Margin="0,0,4,0"/>
+                            <TextBlock Text="关闭" VerticalAlignment="Center" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </Grid>
         </Border>

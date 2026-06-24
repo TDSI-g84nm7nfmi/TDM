@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
+using Microsoft.Win32;
 using TDM.Models;
 using TDM.Services;
 
@@ -23,7 +24,14 @@ namespace TDM.ViewModels
         public string Url
         {
             get => _url;
-            set { if (SetProperty(ref _url, value)) ((RelayCommand)StartCommand).RaiseCanExecuteChanged(); }
+            set
+            {
+                if (SetProperty(ref _url, value))
+                {
+                    OnUrlChanged();
+                    ((RelayCommand)StartCommand).RaiseCanExecuteChanged();
+                }
+            }
         }
 
         public string SavePath
@@ -70,6 +78,8 @@ namespace TDM.ViewModels
         public ICommand SniffCommand { get; }
         public ICommand OpenFolderCommand { get; }
         public ICommand BrowseResourceCommand { get; }
+        public ICommand OpenTorrentCommand { get; }
+        public RelayCommand OpenTorrentFileCommand { get; }
 
         public static DownloadViewModel Instance { get; } = new DownloadViewModel();
 
@@ -89,8 +99,9 @@ namespace TDM.ViewModels
                 _ => SelectedItem != null && !string.IsNullOrEmpty(SelectedItem.FilePath));
             BrowseResourceCommand = new RelayCommand(p => StartFromResource(p as SniffedResource),
                 p => p is SniffedResource);
+            OpenTorrentCommand = new RelayCommand(_ => OpenTorrentDialog());
+            OpenTorrentFileCommand = new RelayCommand(p => LoadTorrentFile(p as string));
 
-            // 监听
             DownloadManager.Instance.ItemAdded += OnItemAdded;
             DownloadManager.Instance.ItemRemoved += OnItemRemoved;
             PropertyChanged += (_, e) =>
@@ -106,15 +117,34 @@ namespace TDM.ViewModels
             };
         }
 
+        /// <summary>
+        /// URL 变化时检测协议类型，给用户提示。
+        /// </summary>
+        private void OnUrlChanged()
+        {
+            if (string.IsNullOrWhiteSpace(_url)) return;
+            var lower = _url.Trim().ToLowerInvariant();
+            if (lower.StartsWith("magnet:"))
+                SniffStatus = "检测到 magnet 链接，点击开始下载即可加入 BT 任务";
+            else if (lower.StartsWith("ed2k://"))
+                SniffStatus = "检测到 eD2k 链接，点击开始下载即可加入电驴任务";
+        }
+
         public bool CanStart()
         {
-            return !string.IsNullOrWhiteSpace(Url) && ClipboardMonitor.IsUrl(Url);
+            if (string.IsNullOrWhiteSpace(Url)) return false;
+            var trimmed = Url.Trim();
+            // 支持 http/https、magnet:、ed2k://
+            if (trimmed.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase)) return true;
+            if (trimmed.StartsWith("ed2k://", StringComparison.OrdinalIgnoreCase)) return true;
+            return ClipboardMonitor.IsUrl(Url);
         }
 
         public void Start()
         {
             if (!CanStart()) return;
-            DownloadManager.Instance.Add(Url, SavePath, Threads, Retries);
+            var url = Url.Trim();
+            DownloadManager.Instance.Add(url, SavePath, Threads, Retries);
             Url = string.Empty;
         }
 
@@ -148,12 +178,10 @@ namespace TDM.ViewModels
         public void AddIncomingResource(SniffedResource resource)
         {
             if (resource == null) return;
-            // 去重
             if (Resources.Any(r => r.Url == resource.Url)) return;
             Resources.Insert(0, resource);
             SniffStatus = $"已接收 {Resources.Count} 个资源";
 
-            // 自动启动下载
             try
             {
                 Url = resource.Url;
@@ -186,9 +214,7 @@ namespace TDM.ViewModels
 
         public void AddBrowserResource(SniffedResource resource)
         {
-            // Avoid duplicates
             if (Resources.Any(r => r.Url == resource.Url)) return;
-            // Auto-switch to download view to show resources
             Resources.Add(resource);
         }
 
@@ -197,6 +223,49 @@ namespace TDM.ViewModels
             if (SelectedItem == null) return;
             if (SelectedItem.Status == DownloadStatus.Downloading) Pause();
             else if (SelectedItem.Status == DownloadStatus.Paused) Resume();
+        }
+
+        /// <summary>
+        /// 弹出文件选择对话框，加载 .torrent 文件。
+        /// </summary>
+        public void OpenTorrentDialog()
+        {
+            try
+            {
+                var dlg = new OpenFileDialog
+                {
+                    Title = "选择 BT 种子文件",
+                    Filter = "BT 种子文件 (*.torrent)|*.torrent|所有文件 (*.*)|*.*",
+                    Multiselect = true
+                };
+                if (dlg.ShowDialog() == true)
+                {
+                    foreach (var f in dlg.FileNames)
+                    {
+                        LoadTorrentFile(f);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("打开种子文件失败", ex);
+            }
+        }
+
+        /// <summary>
+        /// 加载并添加 .torrent 任务。
+        /// </summary>
+        public void LoadTorrentFile(string? path)
+        {
+            if (string.IsNullOrEmpty(path) || !System.IO.File.Exists(path)) return;
+            try
+            {
+                DownloadManager.Instance.AddTorrentFile(path, SavePath);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("加载种子失败: " + path, ex);
+            }
         }
 
         #region 嗅探

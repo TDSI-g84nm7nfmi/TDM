@@ -20,7 +20,10 @@
             <Border Style="{StaticResource CardBorder}" Margin="0,0,0,14" Padding="22,18">
                 <StackPanel>
                     <DockPanel Margin="0,0,0,12">
-                        <TextBlock Text="主题" Style="{StaticResource GroupTitle}" VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Path Width="16" Height="16" Stretch="Uniform" Fill="{StaticResource PrimaryBrush}" Data="{StaticResource IconPalette}" Margin="0,0,8,0"/>
+                            <TextBlock Text="主题" Style="{StaticResource GroupTitle}" VerticalAlignment="Center"/>
+                        </StackPanel>
                         <TextBlock DockPanel.Dock="Right" Text="切换后立即生效" Style="{StaticResource SubText}" VerticalAlignment="Center"/>
                     </DockPanel>
                     <ItemsControl>
@@ -41,7 +44,10 @@
             <!-- 下载 -->
             <Border Style="{StaticResource CardBorder}" Margin="0,0,0,14" Padding="22,18">
                 <StackPanel>
-                    <TextBlock Text="下载" Style="{StaticResource GroupTitle}" Margin="0,0,0,14"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                        <Path Width="16" Height="16" Stretch="Uniform" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="1.8" Fill="Transparent" Data="{StaticResource IconDownload}" Margin="0,0,8,0"/>
+                        <TextBlock Text="下载" Style="{StaticResource GroupTitle}" VerticalAlignment="Center"/>
+                    </StackPanel>
 
                     <Grid Margin="0,0,0,14">
                         <Grid.ColumnDefinitions>
@@ -51,7 +57,12 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="默认保存目录" Style="{StaticResource BodySecondary}" VerticalAlignment="Center"/>
                         <TextBox Grid.Column="1" Text="{Binding DefaultSaveDir, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBox}"/>
-                        <Button Grid.Column="2" Style="{StaticResource GhostButton}" Content="浏览…" Margin="8,0,0,0" Command="{Binding BrowseCommand}"/>
+                        <Button Grid.Column="2" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Command="{Binding BrowseCommand}" Padding="12,6">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Path Width="14" Height="14" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="{StaticResource IconFolder}" Margin="0,0,5,0"/>
+                                <TextBlock Text="浏览…" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                     </Grid>
 
                     <Grid Margin="0,0,0,12">
@@ -98,7 +109,10 @@
             <!-- 行为 -->
             <Border Style="{StaticResource CardBorder}" Margin="0,0,0,14" Padding="22,18">
                 <StackPanel>
-                    <TextBlock Text="行为" Style="{StaticResource GroupTitle}" Margin="0,0,0,12"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <Path Width="16" Height="16" Stretch="Uniform" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="1.8" Fill="Transparent" Data="{StaticResource IconSpeed}" Margin="0,0,8,0"/>
+                        <TextBlock Text="行为" Style="{StaticResource GroupTitle}" VerticalAlignment="Center"/>
+                    </StackPanel>
                     <CheckBox Style="{StaticResource ModernCheckBox}" Content="自动检测剪贴板中的下载链接"
                               IsChecked="{Binding EnableClipboard}" Margin="0,0,0,10"/>
                     <Grid Margin="0,0,0,10">
@@ -108,7 +122,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="点击关闭按钮时" Style="{StaticResource BodySecondary}" VerticalAlignment="Center"/>
                         <ComboBox Grid.Column="1" x:Name="CloseActionBox" Width="200"
-                                  SelectedValue="{Binding CloseAction}" SelectionChanged="OnCloseActionChanged">
+                                  SelectedValue="{Binding CloseAction}" SelectedValuePath="Tag" SelectionChanged="OnCloseActionChanged">
                             <ComboBoxItem Content="每次询问" Tag="ask"/>
                             <ComboBoxItem Content="最小化到托盘" Tag="tray"/>
                             <ComboBoxItem Content="直接退出" Tag="exit"/>
@@ -126,15 +140,28 @@
             <!-- 浏览器扩展 -->
             <Border Style="{StaticResource CardBorder}" Margin="0,0,0,14" Padding="22,18">
                 <StackPanel>
-                    <TextBlock Text="浏览器扩展" Style="{StaticResource GroupTitle}" Margin="0,0,0,10"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <Path Width="16" Height="16" Stretch="Uniform" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="1.8" Fill="Transparent" Data="{StaticResource IconBrowser}" Margin="0,0,8,0"/>
+                        <TextBlock Text="浏览器扩展" Style="{StaticResource GroupTitle}" VerticalAlignment="Center"/>
+                    </StackPanel>
                     <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" Margin="0,0,0,10" LineHeight="20">
                         TDM 启动时会自动扫描系统中的 Chromium 内核浏览器（Chrome、Edge、Tabbit、Brave、Vivaldi、Opera、360 极速、QQ 浏览器、Yandex、Cent Browser 等），询问是否安装扩展接管所有下载。
                     </TextBlock>
                     <CheckBox x:Name="ScanOnStartupCheck" Content="启动时自动扫描浏览器"
                               IsChecked="{Binding ScanBrowsersOnStartup}" Margin="0,0,0,10" Style="{StaticResource ModernCheckBox}"/>
                     <StackPanel Orientation="Horizontal">
-                        <Button x:Name="RescanBrowserButton" Style="{StaticResource SecondaryButton}" Content="重新扫描浏览器" Click="OnRescanBrowser" Padding="18,8" Margin="0,0,8,0"/>
-                        <Button x:Name="OpenLogWindowButton" Style="{StaticResource GhostButton}" Content="打开实时日志（开发者模式）" Click="OnOpenLogWindow" Padding="18,8"/>
+                        <Button x:Name="RescanBrowserButton" Style="{StaticResource SecondaryButton}" Click="OnRescanBrowser" Padding="14,8" Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Path Width="14" Height="14" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.8" Fill="Transparent" Data="{StaticResource IconRefresh}" Margin="0,0,6,0"/>
+                                <TextBlock Text="重新扫描浏览器" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="OpenLogWindowButton" Style="{StaticResource GhostButton}" Click="OnOpenLogWindow" Padding="14,8">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Path Width="14" Height="14" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.8" Fill="Transparent" Data="{StaticResource IconLog}" Margin="0,0,6,0"/>
+                                <TextBlock Text="打开实时日志" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -142,12 +169,35 @@
             <!-- 高级 -->
             <Border Style="{StaticResource CardBorder}" Padding="22,18">
                 <StackPanel>
-                    <TextBlock Text="高级" Style="{StaticResource GroupTitle}" Margin="0,0,0,12"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <Path Width="16" Height="16" Stretch="Uniform" Stroke="{StaticResource PrimaryBrush}" StrokeThickness="1.8" Fill="Transparent" Data="{StaticResource IconLog}" Margin="0,0,8,0"/>
+                        <TextBlock Text="高级" Style="{StaticResource GroupTitle}" VerticalAlignment="Center"/>
+                    </StackPanel>
                     <WrapPanel>
-                        <Button Style="{StaticResource SecondaryButton}" Content="打开数据目录" Command="{Binding OpenDataFolderCommand}" Margin="0,0,8,8" Padding="18,8"/>
-                        <Button Style="{StaticResource SecondaryButton}" Content="打开日志目录" Command="{Binding OpenLogFolderCommand}" Margin="0,0,8,8" Padding="18,8"/>
-                        <Button Style="{StaticResource SecondaryButton}" Content="清空历史记录" Command="{Binding ClearHistoryCommand}" Margin="0,0,8,8" Padding="18,8"/>
-                        <Button Style="{StaticResource DangerButton}" Content="重置所有设置" Command="{Binding ResetSettingsCommand}" Padding="18,8"/>
+                        <Button Style="{StaticResource SecondaryButton}" Command="{Binding OpenDataFolderCommand}" Margin="0,0,8,8" Padding="14,8">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Path Width="14" Height="14" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="{StaticResource IconFolder}" Margin="0,0,6,0"/>
+                                <TextBlock Text="打开数据目录" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource SecondaryButton}" Command="{Binding OpenLogFolderCommand}" Margin="0,0,8,8" Padding="14,8">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Path Width="14" Height="14" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="{StaticResource IconLog}" Margin="0,0,6,0"/>
+                                <TextBlock Text="打开日志目录" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource SecondaryButton}" Command="{Binding ClearHistoryCommand}" Margin="0,0,8,8" Padding="14,8">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Path Width="14" Height="14" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.8" Fill="Transparent" Data="{StaticResource IconTrash}" Margin="0,0,6,0"/>
+                                <TextBlock Text="清空历史记录" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource DangerButton}" Command="{Binding ResetSettingsCommand}" Padding="14,8">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Path Width="14" Height="14" Stretch="Uniform" Stroke="White" StrokeThickness="1.8" Fill="Transparent" Data="{StaticResource IconRefresh}" Margin="0,0,6,0"/>
+                                <TextBlock Text="重置所有设置" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                     </WrapPanel>
                 </StackPanel>
             </Border>

@@ -3,17 +3,18 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using TDM.Services;
 
 namespace TDM.Views
 {
     public partial class LoadingView : UserControl
     {
         private readonly DispatcherTimer _spinnerTimer;
+        private bool _started;
 
         public LoadingView()
         {
             InitializeComponent();
-            // 用一个低开销的 60fps DispatcherTimer 持续旋转弧线
             _spinnerTimer = new DispatcherTimer(DispatcherPriority.Render)
             {
                 Interval = TimeSpan.FromMilliseconds(16)
@@ -24,22 +25,24 @@ namespace TDM.Views
                 {
                     SpinnerRotate.Angle = (SpinnerRotate.Angle + 6) % 360;
                 }
-                catch { }
+                catch (Exception ex) { Logger.Warn("LoadingView 旋转异常: " + ex.Message); }
             };
+            Loaded += (_, _) => { if (_started) _spinnerTimer.Start(); };
+            Unloaded += (_, _) => _spinnerTimer.Stop();
         }
 
-        /// <summary>在 Loaded 时启动旋转，Unloaded 时停止，避免空转消耗 CPU</summary>
         public void Start()
         {
+            _started = true;
             try { _spinnerTimer.Start(); } catch { }
         }
 
         public void Stop()
         {
+            _started = false;
             try { _spinnerTimer.Stop(); } catch { }
         }
 
-        /// <summary>更新状态文字</summary>
         public void SetStatus(string text)
         {
             try { StatusText.Text = text; } catch { }

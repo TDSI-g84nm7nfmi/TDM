@@ -98,7 +98,11 @@ namespace TDM.Services
         /// </summary>
         public static void Apply(string theme, bool animate = true)
         {
-            if (!ThemePalettes.TryGetValue(theme, out var hexes)) theme = Purple;
+            if (!ThemePalettes.TryGetValue(theme, out var hexes))
+            {
+                theme = Purple;
+                hexes = ThemePalettes[Purple];
+            }
             Current = theme;
 
             var app = Application.Current;

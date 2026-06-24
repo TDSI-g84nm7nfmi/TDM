@@ -1,11 +1,13 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
 using TDM.Services;
 using TDM.ViewModels;
+using TDM.Windows;
 
 namespace TDM
 {
@@ -40,7 +42,36 @@ namespace TDM
             _singleInstanceMutex = new Mutex(true, $"TDM-SingleInstance-{Environment.MachineName}", out createdNew);
             if (!createdNew)
             {
-                MessageBox.Show($"{AppName} 已经在运行中！请检查系统托盘。", AppName, MessageBoxButton.OK, MessageBoxImage.Information);
+                // 尝试激活已在运行的窗口
+                try
+                {
+                    var existing = System.Diagnostics.Process.GetProcessesByName("TDM")
+                        .FirstOrDefault(p => p.Id != System.Diagnostics.Process.GetCurrentProcess().Id);
+                    if (existing != null)
+                    {
+                        // 找到主窗口句柄并激活
+                        var hwnd = existing.MainWindowHandle;
+                        if (hwnd != IntPtr.Zero)
+                        {
+                            if (NativeMethods.IsIconic(hwnd)) NativeMethods.ShowWindowAsync(hwnd, 9 /* SW_RESTORE */);
+                            NativeMethods.SetForegroundWindow(hwnd);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn("激活已有实例失败: " + ex.Message);
+                }
+
+                try
+                {
+                    var dlg = new AlreadyRunningWindow();
+                    dlg.ShowDialog();
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn("显示已在运行提示失败: " + ex.Message);
+                }
                 Environment.Exit(0);
                 return;
             }

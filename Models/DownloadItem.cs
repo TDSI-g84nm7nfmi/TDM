@@ -9,11 +9,19 @@ namespace TDM.Models
         Idle,
         Queued,
         Connecting,
+        Metadata,    // BT/ED2K 等需要元数据
         Downloading,
         Paused,
         Completed,
         Failed,
         Canceled
+    }
+
+    public enum DownloadProtocol
+    {
+        Http,
+        Bt,
+        Ed2k
     }
 
     public class DownloadItem : INotifyPropertyChanged
@@ -26,12 +34,16 @@ namespace TDM.Models
         private double _progress; // 0-100
         private double _speed;    // bytes/sec
         private DownloadStatus _status = DownloadStatus.Idle;
+        private DownloadProtocol _protocol = DownloadProtocol.Http;
         private string? _errorMessage;
         private DateTime _startTime = DateTime.Now;
         private DateTime? _endTime;
         private int _threads = 4;
         private int _retryCount;
         private string? _referer;
+        private int _seeders;
+        private int _peers;
+        private string? _infoHash;
 
         public string Url
         {
@@ -78,14 +90,45 @@ namespace TDM.Models
         public DownloadStatus Status
         {
             get => _status;
-            set { if (_status != value) { _status = value; OnPropertyChanged(); OnPropertyChanged(nameof(StatusText)); } }
+            set
+            {
+                if (_status != value)
+                {
+                    _status = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(StatusText));
+                }
+            }
         }
+
+        public DownloadProtocol Protocol
+        {
+            get => _protocol;
+            set
+            {
+                if (_protocol != value)
+                {
+                    _protocol = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(ProtocolText));
+                }
+            }
+        }
+
+        public string ProtocolText => _protocol switch
+        {
+            DownloadProtocol.Http => "HTTP",
+            DownloadProtocol.Bt => "BT",
+            DownloadProtocol.Ed2k => "eD2k",
+            _ => "?"
+        };
 
         public string StatusText => _status switch
         {
             DownloadStatus.Idle => "等待中",
             DownloadStatus.Queued => "队列中",
             DownloadStatus.Connecting => "连接中",
+            DownloadStatus.Metadata => "解析元数据",
             DownloadStatus.Downloading => "下载中",
             DownloadStatus.Paused => "已暂停",
             DownloadStatus.Completed => "完成",
@@ -128,6 +171,24 @@ namespace TDM.Models
         {
             get => _referer;
             set { if (_referer != value) { _referer = value; OnPropertyChanged(); } }
+        }
+
+        public int Seeders
+        {
+            get => _seeders;
+            set { if (_seeders != value) { _seeders = value; OnPropertyChanged(); } }
+        }
+
+        public int Peers
+        {
+            get => _peers;
+            set { if (_peers != value) { _peers = value; OnPropertyChanged(); } }
+        }
+
+        public string? InfoHash
+        {
+            get => _infoHash;
+            set { if (_infoHash != value) { _infoHash = value; OnPropertyChanged(); } }
         }
 
         public TimeSpan Elapsed => (EndTime ?? DateTime.Now) - StartTime;

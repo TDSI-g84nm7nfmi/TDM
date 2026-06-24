@@ -455,6 +455,8 @@ namespace TDM.Services
 
         private readonly HttpClient _http;
         private readonly ConcurrentDictionary<string, ChunkedDownloader> _downloaders = new();
+        private readonly ConcurrentDictionary<string, BtDownloader> _btDownloaders = new();
+        private readonly ConcurrentDictionary<string, Ed2kDownloader> _ed2kDownloaders = new();
         private readonly ConcurrentDictionary<string, DownloadItem> _items = new();
 
         public event EventHandler<DownloadItem>? ItemAdded;
@@ -483,11 +485,25 @@ namespace TDM.Services
 
         public DownloadItem? Add(string url, string saveDir, int? threads, int? retries, string? suggestedFilename)
         {
-            if (string.IsNullOrWhiteSpace(url) || !Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            if (string.IsNullOrWhiteSpace(url)) return null;
+            var trimmed = url.Trim();
+
+            // magnet: 派发到 BT
+            if (trimmed.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase))
+                return AddMagnet(trimmed, saveDir);
+
+            // ed2k:// 派发到 eD2k
+            if (trimmed.StartsWith("ed2k://", StringComparison.OrdinalIgnoreCase))
+                return AddEd2k(trimmed, saveDir);
+
+            // HTTP/HTTPS
+            if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri))
+                return null;
+            if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
                 return null;
 
             // 检查重复
-            if (_items.ContainsKey(url)) return _items[url];
+            if (_items.ContainsKey(trimmed)) return _items[trimmed];
 
             // 生成文件名
             var filename = suggestedFilename;
@@ -509,44 +525,170 @@ namespace TDM.Services
 
             var item = new DownloadItem
             {
-                Url = url,
+                Url = trimmed,
                 FilePath = fullPath,
                 FileName = Path.GetFileName(fullPath),
                 Threads = threads ?? SettingsService.Current.DefaultThreads,
+                Protocol = DownloadProtocol.Http,
                 Status = DownloadStatus.Queued,
                 StartTime = DateTime.Now,
             };
 
-            _items[url] = item;
+            _items[trimmed] = item;
             ItemAdded?.Invoke(this, item);
 
             StartDownload(item, retries ?? SettingsService.Current.MaxRetries);
             return item;
         }
 
+        /// <summary>
+        /// 加载 .torrent 文件并加入 BT 任务。
+        /// </summary>
+        public DownloadItem? AddTorrentFile(string torrentPath, string saveDir)
+        {
+            if (string.IsNullOrWhiteSpace(torrentPath) || !File.Exists(torrentPath)) return null;
+            TorrentMetadata? meta;
+            try
+            {
+                var raw = BencodeParser.ParseFile(torrentPath);
+                if (raw is not Dictionary<string, object?> dict) return null;
+                meta = BencodeParser.ToTorrentMetadata(dict);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("种子文件解析失败: " + torrentPath, ex);
+                return null;
+            }
+            if (meta == null) return null;
+
+            // 用 infoHash 做去重 key
+            var key = $"torrent:{meta.InfoHash}";
+            if (_items.ContainsKey(key)) return _items[key];
+
+            try { Directory.CreateDirectory(saveDir); }
+            catch { return null; }
+
+            var filename = SanitizeFileName(meta.IsMultiFile ? meta.Name : meta.Files[0].Path);
+            var fullPath = GetUniquePath(Path.Combine(saveDir, filename));
+
+            var item = new DownloadItem
+            {
+                Url = $"torrent://{meta.InfoHash}",
+                FilePath = fullPath,
+                FileName = Path.GetFileName(fullPath),
+                Protocol = DownloadProtocol.Bt,
+                Status = DownloadStatus.Queued,
+                StartTime = DateTime.Now,
+                InfoHash = meta.InfoHash,
+                TotalSize = meta.TotalSize
+            };
+
+            _items[key] = item;
+            ItemAdded?.Invoke(this, item);
+            StartBtDownload(item, saveDir, meta, null);
+            return item;
+        }
+
+        /// <summary>
+        /// 加入 magnet 链接。
+        /// </summary>
+        private DownloadItem? AddMagnet(string magnetUrl, string saveDir)
+        {
+            var info = MagnetLink.Parse(magnetUrl);
+            if (info == null)
+            {
+                Logger.Warn("无法解析 magnet 链接: " + magnetUrl);
+                return null;
+            }
+            var key = $"magnet:{info.InfoHash}";
+            if (_items.ContainsKey(key)) return _items[key];
+
+            try { Directory.CreateDirectory(saveDir); }
+            catch { return null; }
+
+            var filename = SanitizeFileName(string.IsNullOrEmpty(info.DisplayName) ? info.InfoHash : info.DisplayName);
+            var fullPath = GetUniquePath(Path.Combine(saveDir, filename));
+
+            var item = new DownloadItem
+            {
+                Url = magnetUrl,
+                FilePath = fullPath,
+                FileName = Path.GetFileName(fullPath),
+                Protocol = DownloadProtocol.Bt,
+                Status = DownloadStatus.Queued,
+                StartTime = DateTime.Now,
+                InfoHash = info.InfoHash,
+                TotalSize = info.ExactLength
+            };
+
+            _items[key] = item;
+            ItemAdded?.Invoke(this, item);
+            StartBtDownload(item, saveDir, null, info);
+            return item;
+        }
+
+        /// <summary>
+        /// 加入 ed2k 链接。
+        /// </summary>
+        private DownloadItem? AddEd2k(string ed2kUrl, string saveDir)
+        {
+            var info = Ed2kLink.Parse(ed2kUrl);
+            if (info == null)
+            {
+                Logger.Warn("无法解析 ed2k 链接: " + ed2kUrl);
+                return null;
+            }
+            if (info.Type != Ed2kLink.Ed2kType.File)
+            {
+                Logger.Warn("暂仅支持 file 类型 ed2k 链接");
+                return null;
+            }
+            var key = $"ed2k:{info.Hash}";
+            if (_items.ContainsKey(key)) return _items[key];
+
+            try { Directory.CreateDirectory(saveDir); }
+            catch { return null; }
+
+            var filename = SanitizeFileName(string.IsNullOrEmpty(info.Name) ? info.Hash : info.Name);
+            var fullPath = GetUniquePath(Path.Combine(saveDir, filename));
+
+            var item = new DownloadItem
+            {
+                Url = ed2kUrl,
+                FilePath = fullPath,
+                FileName = Path.GetFileName(fullPath),
+                Protocol = DownloadProtocol.Ed2k,
+                Status = DownloadStatus.Queued,
+                StartTime = DateTime.Now,
+                InfoHash = info.Hash,
+                TotalSize = info.Size
+            };
+
+            _items[key] = item;
+            ItemAdded?.Invoke(this, item);
+            StartEd2kDownload(item, saveDir, info);
+            return item;
+        }
+
         public void Pause(DownloadItem item)
         {
-            if (_downloaders.TryGetValue(item.Url, out var dl))
-            {
-                dl.Pause();
-            }
+            if (_downloaders.TryGetValue(item.Url, out var dl)) dl.Pause();
+            else if (_btDownloaders.TryGetValue(item.Url, out var btdl)) btdl.Pause();
+            else if (_ed2kDownloaders.TryGetValue(item.Url, out var edl)) edl.Pause();
         }
 
         public void Resume(DownloadItem item)
         {
-            if (_downloaders.TryGetValue(item.Url, out var dl))
-            {
-                dl.Resume();
-            }
+            if (_downloaders.TryGetValue(item.Url, out var dl)) dl.Resume();
+            else if (_btDownloaders.TryGetValue(item.Url, out var btdl)) btdl.Resume();
+            else if (_ed2kDownloaders.TryGetValue(item.Url, out var edl)) edl.Resume();
         }
 
         public void Stop(DownloadItem item)
         {
-            if (_downloaders.TryRemove(item.Url, out var dl))
-            {
-                dl.Stop();
-                dl.Dispose();
-            }
+            if (_downloaders.TryRemove(item.Url, out var dl)) { dl.Stop(); dl.Dispose(); }
+            if (_btDownloaders.TryRemove(item.Url, out var btdl)) { btdl.Stop(); btdl.Dispose(); }
+            if (_ed2kDownloaders.TryRemove(item.Url, out var edl)) { edl.Stop(); edl.Dispose(); }
             if (_items.TryRemove(item.Url, out var it))
             {
                 ItemRemoved?.Invoke(this, it);
@@ -584,6 +726,49 @@ namespace TDM.Services
             dl.Start();
         }
 
+        private void StartBtDownload(DownloadItem item, string saveDir,
+            TorrentMetadata? meta, MagnetLink.MagnetInfo? magnet)
+        {
+            var dl = new BtDownloader(item, _http, saveDir, meta, magnet);
+            dl.Paused += (_, _) => item.Status = DownloadStatus.Paused;
+            dl.Resumed += (_, _) => item.Status = DownloadStatus.Downloading;
+            dl.Completed += (_, _) =>
+            {
+                _btDownloaders.TryRemove(item.Url, out BtDownloader? _dl);
+                ItemCompleted?.Invoke(this, item);
+            };
+            dl.Failed += (_, msg) =>
+            {
+                item.ErrorMessage = msg;
+                _btDownloaders.TryRemove(item.Url, out BtDownloader? _dl);
+                ItemFailed?.Invoke(this, item);
+            };
+
+            _btDownloaders[item.Url] = dl;
+            dl.Start();
+        }
+
+        private void StartEd2kDownload(DownloadItem item, string saveDir, Ed2kLink.Ed2kFileInfo info)
+        {
+            var dl = new Ed2kDownloader(item, saveDir, info);
+            dl.Paused += (_, _) => item.Status = DownloadStatus.Paused;
+            dl.Resumed += (_, _) => item.Status = DownloadStatus.Downloading;
+            dl.Completed += (_, _) =>
+            {
+                _ed2kDownloaders.TryRemove(item.Url, out Ed2kDownloader? _dl);
+                ItemCompleted?.Invoke(this, item);
+            };
+            dl.Failed += (_, msg) =>
+            {
+                item.ErrorMessage = msg;
+                _ed2kDownloaders.TryRemove(item.Url, out Ed2kDownloader? _dl);
+                ItemFailed?.Invoke(this, item);
+            };
+
+            _ed2kDownloaders[item.Url] = dl;
+            dl.Start();
+        }
+
         public static string SanitizeFileName(string name)
         {
             if (string.IsNullOrEmpty(name)) return $"download_{DateTime.Now:yyyyMMdd_HHmmss}";
@@ -612,7 +797,11 @@ namespace TDM.Services
         public void Dispose()
         {
             foreach (var dl in _downloaders.Values) dl.Dispose();
+            foreach (var dl in _btDownloaders.Values) dl.Dispose();
+            foreach (var dl in _ed2kDownloaders.Values) dl.Dispose();
             _downloaders.Clear();
+            _btDownloaders.Clear();
+            _ed2kDownloaders.Clear();
             _http.Dispose();
         }
     }

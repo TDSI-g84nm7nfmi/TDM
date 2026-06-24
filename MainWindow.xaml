@@ -25,6 +25,14 @@
         <TaskbarItemInfo/>
     </Window.TaskbarItemInfo>
 
+    <Window.Resources>
+        <LinearGradientBrush x:Key="ThemeSweepBrushResource" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#22FFFFFF" Offset="0"/>
+            <GradientStop Color="#44FFFFFF" Offset="0.5"/>
+            <GradientStop Color="#22FFFFFF" Offset="1"/>
+        </LinearGradientBrush>
+    </Window.Resources>
+
     <Border CornerRadius="14" Background="{StaticResource BackgroundBottomBrush}"
             BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
             MouseLeftButtonDown="OnBorderMouseLeftButtonDown"
@@ -53,15 +61,8 @@
 
             <!-- 主题切换水波纹 -->
             <Rectangle Grid.Row="0" Grid.RowSpan="3" x:Name="ThemeSweep" IsHitTestVisible="False"
-                       Opacity="0" Visibility="Collapsed">
-                <Rectangle.Fill>
-                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1" x:Name="ThemeSweepBrush">
-                        <GradientStop Color="#22FFFFFF" Offset="0"/>
-                        <GradientStop Color="#44FFFFFF" Offset="0.5"/>
-                        <GradientStop Color="#22FFFFFF" Offset="1"/>
-                    </LinearGradientBrush>
-                </Rectangle.Fill>
-            </Rectangle>
+                       Opacity="0" Visibility="Collapsed"
+                       Fill="{DynamicResource ThemeSweepBrushResource}"/>
 
             <!-- ===================== 标题栏 ===================== -->
             <Grid Grid.Row="0">
@@ -75,13 +76,10 @@
 
                         <!-- 品牌区 -->
                         <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Border Width="32" Height="32" CornerRadius="9"
-                                    Background="{StaticResource BrandGradientBrush}"
-                                    Effect="{StaticResource PrimaryGlow}">
-                                <TextBlock Text="T" FontFamily="{StaticResource UIFontFamily}"
-                                           FontSize="18" FontWeight="Bold" Foreground="White"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
+                            <Image Width="28" Height="28" Stretch="Uniform"
+                                   Source="pack://application:,,,/image/icon.png"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   RenderOptions.BitmapScalingMode="HighQuality"/>
                             <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
                                 <TextBlock Text="TDM" FontFamily="{StaticResource UIFontFamily}"
                                            FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextBrush}"/>
@@ -100,9 +98,9 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <Path Grid.Column="0" Width="14" Height="14" Stretch="Uniform"
+                                <Path Width="14" Height="14" Stretch="Uniform"
                                       Fill="{StaticResource SubTextBrush}"
-                                      Data="M11,3 a8,8 0 1 0 4,14 l5,5 2,-2 -5,-5 a8,8 0 0 0 -6,-12 z M11,5 a6,6 0 1 1 0,12 a6,6 0 0 1 0,-12 z"/>
+                                      Data="{StaticResource IconSearch}"/>
                                 <TextBox x:Name="QuickSearchBox" Grid.Column="1"
                                          BorderThickness="0" Background="Transparent" Margin="8,0,0,0"
                                          FontFamily="{StaticResource UIFontFamily}" FontSize="12"
@@ -117,44 +115,50 @@
                         <!-- 工具按钮 -->
                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                             <Button x:Name="ThemeButton" Style="{StaticResource IconButton}" ToolTip="切换主题（循环：蓝/绿/紫/粉/深）"
-                                    Click="OnThemeToggleClick" Margin="0,0,2,0">
+                                    Click="OnThemeToggleClick" Margin="0,0,2,0"
+                                    PreviewMouseLeftButtonDown="OnTitleBarButtonPreviewMouseDown">
                                 <Path Width="18" Height="18" Stretch="Uniform"
                                       Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                      StrokeThickness="1.6" Fill="Transparent"
-                                      Data="M12,3 a9,9 0 1 0 9,9 c0,-0.46 -0.04,-0.92 -0.1,-1.36 a5.39,5.39 0 0 1 -4.4,2.26 a5.5,5.5 0 0 1 -3.95,-1.65 a5.5,5.5 0 0 1 -1.65,-3.95 c0,-1.74 0.99,-3.31 2.5,-4.05 a9.05,9.05 0 0 0 -1.4,-0.25 z"/>
+                                      StrokeThickness="2" Fill="Transparent"
+                                      Data="{StaticResource IconTheme}"/>
                             </Button>
                             <Button x:Name="AboutButton" Style="{StaticResource IconButton}" ToolTip="关于 TDM"
-                                    Click="OnAboutClick" Margin="0,0,2,0">
+                                    Click="OnAboutClick" Margin="0,0,2,0"
+                                    PreviewMouseLeftButtonDown="OnTitleBarButtonPreviewMouseDown">
                                 <Path Width="18" Height="18" Stretch="Uniform"
                                       Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                      StrokeThickness="1.6" Fill="Transparent"
-                                      Data="M12,2 A10,10 0 1 0 12,22 A10,10 0 1 0 12,2 M12,16 v0.01 M12,8 v5"/>
+                                      StrokeThickness="2" Fill="Transparent"
+                                      Data="{StaticResource IconInfo}"/>
                             </Button>
                             <!-- 分隔线 -->
                             <Border Width="1" Height="18" Background="{StaticResource DividerBrush}" Margin="6,0"/>
                             <!-- 最小化 -->
                             <Button x:Name="MinimizeButton" Style="{StaticResource IconButton}" ToolTip="最小化到托盘"
-                                    Click="OnMinimizeClick" Margin="0,0,2,0">
-                                <Path Width="18" Height="2" Stretch="Uniform"
+                                    Click="OnMinimizeClick" Margin="0,0,2,0"
+                                    PreviewMouseLeftButtonDown="OnTitleBarButtonPreviewMouseDown">
+                                <Path Width="18" Height="18" Stretch="Uniform"
                                       Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                      StrokeThickness="1.6" Fill="Transparent"
-                                      Data="M2,1 L18,1"/>
+                                      StrokeThickness="2" Fill="Transparent"
+                                      Data="{StaticResource IconMinimize}"/>
                             </Button>
                             <!-- 最大化/还原 -->
                             <Button x:Name="MaximizeButton" Style="{StaticResource IconButton}" ToolTip="最大化"
-                                    Click="OnMaximizeClick" Margin="0,0,2,0">
+                                    Click="OnMaximizeClick" Margin="0,0,2,0"
+                                    PreviewMouseLeftButtonDown="OnTitleBarButtonPreviewMouseDown">
                                 <Path Width="18" Height="18" Stretch="Uniform"
                                       Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                      StrokeThickness="1.6" Fill="Transparent"
-                                      Data="M4,4 H16 V16 H4 Z"/>
+                                      StrokeThickness="2" Fill="Transparent"
+                                      Data="{StaticResource IconMaximize}"/>
                             </Button>
                             <!-- 关闭 -->
                             <Button x:Name="CloseButton" Style="{StaticResource IconButton}" ToolTip="关闭"
-                                    Click="OnCloseClick">
+                                    Click="OnCloseClick" Margin="0,0,0,0"
+                                    Foreground="{StaticResource ErrorBrush}"
+                                    PreviewMouseLeftButtonDown="OnTitleBarButtonPreviewMouseDown">
                                 <Path Width="18" Height="18" Stretch="Uniform"
                                       Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                      StrokeThickness="1.6" Fill="Transparent"
-                                      Data="M6,6 L18,18 M18,6 L6,18"/>
+                                      StrokeThickness="2" Fill="Transparent"
+                                      Data="{StaticResource IconClose}"/>
                             </Button>
                         </StackPanel>
                     </Grid>
@@ -182,7 +186,7 @@
                                     Padding="14,0,12,0">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <Path Width="16" Height="16" Stretch="Uniform" Fill="White"
-                                          Data="M11,5 H13 V11 H19 V13 H13 V19 H11 V13 H5 V11 H11 z"/>
+                                          Data="{StaticResource IconAdd}"/>
                                     <TextBlock Text="新建下载" Margin="10,0,0,0" FontWeight="SemiBold" FontSize="13"/>
                                 </StackPanel>
                             </Button>
@@ -200,10 +204,9 @@
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal">
                                     <Border Width="32" Height="32" CornerRadius="16"
-                                            Background="{StaticResource BrandGradientBrush}">
-                                        <TextBlock Text="B" FontFamily="{StaticResource UIFontFamily}"
-                                                   FontSize="14" FontWeight="Bold" Foreground="White"
-                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                        <Image Source="pack://application:,,,/image/avatar.jpg" Stretch="UniformToFill"
+                                               RenderOptions.BitmapScalingMode="HighQuality"/>
                                     </Border>
                                     <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
                                         <TextBlock Text="会飞的附魔下界合金剑" FontSize="12" FontWeight="SemiBold"
@@ -217,11 +220,13 @@
                                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                                         Click="OnExtensionStatusClick" Height="32" Padding="0,0,0,0" Margin="-6,0,-6,0">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Ellipse x:Name="ExtStatusDot" Width="8" Height="8" Fill="#1BC982"
-                                                 VerticalAlignment="Center"/>
-                                        <TextBlock x:Name="ExtStatusText" Text="扩展就绪" Margin="8,0,0,0"
-                                                   FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
-                                    </StackPanel>
+                                    <Path Width="14" Height="14" Stretch="Uniform" Fill="{StaticResource TextSecondaryBrush}"
+                                          Data="{StaticResource IconExtension}" Margin="0,0,6,0"/>
+                                    <Ellipse x:Name="ExtStatusDot" Width="8" Height="8" Fill="#C99A1B"
+                                             VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="ExtStatusText" Text="扩展未连接" Margin="8,0,0,0"
+                                               FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                </StackPanel>
                                 </Button>
                             </StackPanel>
                         </Border>
@@ -234,7 +239,7 @@
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <Path Width="18" Height="18" Stretch="Uniform"
                                           Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
-                                          Data="M12,3 v10 M7,9 l5,5 5,-5 M5,21 h14 M3,5 h4 M17,5 h4"/>
+                                          Data="{StaticResource IconDownload}"/>
                                     <TextBlock Text="下载任务" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="14"/>
                                 </StackPanel>
                             </ListBoxItem>
@@ -242,7 +247,7 @@
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <Path Width="18" Height="18" Stretch="Uniform"
                                           Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
-                                          Data="M12,8 v5 l3,2 M21,12 a9,9 0 1 1 -3,-6.7 M3,12 a9,9 0 0 0 9,9"/>
+                                          Data="{StaticResource IconHistory}"/>
                                     <TextBlock Text="历史记录" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="14"/>
                                 </StackPanel>
                             </ListBoxItem>
@@ -250,7 +255,7 @@
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <Path Width="18" Height="18" Stretch="Uniform"
                                           Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
-                                          Data="M12,15 a3,3 0 1 0 0,-6 a3,3 0 0 0 0,6 z M19.4,15 a1.65,1.65 0 0 0 0.33,1.82 l0.06,0.06 a2,2 0 1 1 -2.83,2.83 l-0.06,-0.06 a1.65,1.65 0 0 0 -1.82,-0.33 1.65,1.65 0 0 0 -1,1.51 V21 a2,2 0 1 1 -4,0 v-0.09 a1.65,1.65 0 0 0 -1,-1.51 1.65,1.65 0 0 0 -1.82,0.33 l-0.06,0.06 a2,2 0 1 1 -2.83,-2.83 l0.06,-0.06 a1.65,1.65 0 0 0 0.33,-1.82 1.65,1.65 0 0 0 -1.51,-1 H3 a2,2 0 1 1 0,-4 h0.09 a1.65,1.65 0 0 0 1.51,-1 1.65,1.65 0 0 0 -0.33,-1.82 l-0.06,-0.06 a2,2 0 1 1 2.83,-2.83 l0.06,0.06 a1.65,1.65 0 0 0 1.82,0.33 h0.01 a1.65,1.65 0 0 0 1,-1.51 V3 a2,2 0 1 1 4,0 v0.09 a1.65,1.65 0 0 0 1,1.51 1.65,1.65 0 0 0 1.82,-0.33 l0.06,-0.06 a2,2 0 1 1 2.83,2.83 l-0.06,0.06 a1.65,1.65 0 0 0 -0.33,1.82 v0.01 a1.65,1.65 0 0 0 1.51,1 H21 a2,2 0 1 1 0,4 h-0.09 a1.65,1.65 0 0 0 -1.51,1 z"/>
+                                          Data="{StaticResource IconSettings}"/>
                                     <TextBlock Text="设置" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="14"/>
                                 </StackPanel>
                             </ListBoxItem>

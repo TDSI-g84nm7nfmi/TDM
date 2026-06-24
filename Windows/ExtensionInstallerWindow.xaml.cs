@@ -50,17 +50,19 @@ namespace TDM.Windows
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
+            var iconPath = new System.Windows.Shapes.Path
+            {
+                Width = 16, Height = 16, Stretch = Stretch.Uniform,
+                Fill = Brushes.White,
+                Data = this.TryFindResource("IconBrowser") as Geometry,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
             var iconBorder = new Border
             {
                 Width = 32, Height = 32, CornerRadius = new CornerRadius(6),
-                Background = new SolidColorBrush(Color.FromRgb(0x4A, 0x9E, 0xFF)),
-                Child = new TextBlock
-                {
-                    Text = b.Name.Substring(0, 1).ToUpper(), FontSize = 16,
-                    FontWeight = FontWeights.Bold, Foreground = Brushes.White,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center
-                }
+                Background = BrowserColor(b.Name),
+                Child = iconPath
             };
             Grid.SetColumn(iconBorder, 0);
             grid.Children.Add(iconBorder);
@@ -105,6 +107,21 @@ namespace TDM.Windows
             int unregistered = total - registered;
             SummaryLabel.Text = $"共检测到 {total} 个浏览器内核。";
             InstallButton.Content = $"为 {unregistered} 个浏览器安装扩展";
+        }
+
+        private static Brush BrowserColor(string name)
+        {
+            string n = name?.ToLowerInvariant() ?? "";
+            if (n.Contains("chrome")) return new SolidColorBrush(Color.FromRgb(0x4C, 0x8B, 0xFF));
+            if (n.Contains("edge")) return new SolidColorBrush(Color.FromRgb(0x00, 0x78, 0xD7));
+            if (n.Contains("tabbit")) return new SolidColorBrush(Color.FromRgb(0x9C, 0x4F, 0xFF));
+            if (n.Contains("brave")) return new SolidColorBrush(Color.FromRgb(0xFB, 0x54, 0x2B));
+            if (n.Contains("vivaldi")) return new SolidColorBrush(Color.FromRgb(0xEF, 0x39, 0x39));
+            if (n.Contains("opera")) return new SolidColorBrush(Color.FromRgb(0xFF, 0x1B, 0x2D));
+            if (n.Contains("yandex")) return new SolidColorBrush(Color.FromRgb(0xFC, 0xD0, 0x0A));
+            if (n.Contains("360")) return new SolidColorBrush(Color.FromRgb(0x12, 0xB9, 0xE8));
+            if (n.Contains("qq")) return new SolidColorBrush(Color.FromRgb(0x12, 0xB9, 0xE8));
+            return new SolidColorBrush(Color.FromRgb(0x4A, 0x9E, 0xFF));
         }
 
         // ========== 安装 ==========

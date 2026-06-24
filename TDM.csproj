@@ -58,7 +58,13 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </None>
+    <None Update="Windows\AlreadyRunningWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </None>
     <Resource Include="image\icon.ico" />
+    <Resource Include="image\icon.png" />
+    <Resource Include="image\avatar.jpg" />
     <Resource Include="image\setting.ico" />
   </ItemGroup>
 

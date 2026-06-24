@@ -196,13 +196,13 @@ namespace TDM
             try
             {
                 _trayMenu = new ContextMenuStrip();
-                _trayMenu.Items.Add("显示主窗口", null, (_, _) => ShowMainWindow());
-                _trayMenu.Items.Add("暂停/继续", null, (_, _) => _downloadView?.TogglePause());
+                _trayMenu.Items.Add("打开主界面", IconHelper.GetIconBitmap("IconOpen", 16), (_, _) => ShowMainWindow());
+                _trayMenu.Items.Add("暂停/继续", IconHelper.GetIconBitmap("IconPause", 16), (_, _) => _downloadView?.TogglePause());
                 _trayMenu.Items.Add(new ToolStripSeparator());
-                _trayMenu.Items.Add("设置", null, (_, _) => { NavSettings.IsSelected = true; });
-                _trayMenu.Items.Add("关于 TDM", null, (_, _) => ShowAbout());
+                _trayMenu.Items.Add("设置", IconHelper.GetIconBitmap("IconSettings", 16), (_, _) => { NavSettings.IsSelected = true; });
+                _trayMenu.Items.Add("关于 TDM", IconHelper.GetIconBitmap("IconInfo", 16), (_, _) => ShowAbout());
                 _trayMenu.Items.Add(new ToolStripSeparator());
-                _trayMenu.Items.Add("退出", null, (_, _) => { _userClosed = true; Close(); });
+                _trayMenu.Items.Add("退出", IconHelper.GetIconBitmap("IconExit", 16), (_, _) => { _userClosed = true; Close(); });
 
                 System.Drawing.Icon trayIco;
                 try
@@ -292,11 +292,25 @@ namespace TDM
         private ResizeDirection _resizeDir = ResizeDirection.None;
         private enum ResizeDirection { None, Left, Right, Top, Bottom, TopLeft, TopRight, BottomLeft, BottomRight }
 
+        /// <summary>
+        /// 标题栏按钮的 PreviewMouseDown：在隧道阶段拦截，阻止事件传播到外层 Border 的拖动处理器。
+        /// </summary>
+        private void OnTitleBarButtonPreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            // 在隧道阶段标记为已处理，Border 的 MouseLeftButtonDown 就不会再触发
+            e.Handled = true;
+        }
+
         private void OnBorderMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             try
             {
                 if (e.LeftButton != MouseButtonState.Pressed) return;
+
+                // 如果点击的是按钮/输入框等交互控件，不拦截，让控件自己处理
+                var source = e.OriginalSource as DependencyObject;
+                if (IsInteractiveControl(source)) return;
+
                 var pos = e.GetPosition(this);
                 _resizeDir = HitTestResize(pos);
                 if (_resizeDir != ResizeDirection.None)
@@ -310,8 +324,7 @@ namespace TDM
                     return;
                 }
 
-                // 只在标题栏/品牌区才能拖动（避免误操作）
-                var source = e.OriginalSource as DependencyObject;
+                // 只在标题栏/品牌区空白处才能拖动
                 if (IsInTitleBar(source))
                 {
                     _dragMoved = false;
@@ -324,6 +337,27 @@ namespace TDM
                 }
             }
             catch { }
+        }
+
+        /// <summary>
+        /// 判断点击源是否是交互控件（按钮、输入框、列表等），如果是则不拦截鼠标事件。
+        /// </summary>
+        private bool IsInteractiveControl(DependencyObject? d)
+        {
+            if (d == null) return false;
+            var cur = d;
+            while (cur != null)
+            {
+                if (cur is Button) return true;
+                if (cur is TextBox) return true;
+                if (cur is ListBox) return true;
+                if (cur is ComboBox) return true;
+                if (cur is CheckBox) return true;
+                if (cur is System.Windows.Controls.Primitives.ToggleButton) return true;
+                if (cur is Slider) return true;
+                cur = System.Windows.Media.VisualTreeHelper.GetParent(cur);
+            }
+            return false;
         }
 
         private bool IsInTitleBar(DependencyObject? d)
@@ -465,16 +499,47 @@ namespace TDM
             try
             {
                 if (!e.Data.GetDataPresent(DataFormats.FileDrop) && !e.Data.GetDataPresent(DataFormats.Text)) return;
+
+                // 文件拖入：识别 .torrent
+                if (e.Data.GetDataPresent(DataFormats.FileDrop))
+                {
+                    var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                    var torrents = files.Where(f => f.EndsWith(".torrent", StringComparison.OrdinalIgnoreCase)).ToArray();
+                    if (torrents.Length > 0 && _downloadView != null)
+                    {
+                        NavDownload.IsSelected = true;
+                        foreach (var f in torrents)
+                        {
+                            _downloadView.ViewModel.LoadTorrentFile(f);
+                        }
+                        SetStatus($"已加入 {torrents.Length} 个种子任务", 3000);
+                        return;
+                    }
+                }
+
                 if (e.Data.GetDataPresent(DataFormats.Text))
                 {
                     var text = (string)e.Data.GetData(DataFormats.Text);
                     var firstUrl = text.Split(new[] { '\r', '\n', ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries)
-                        .FirstOrDefault(s => ClipboardMonitor.IsUrl(s));
+                        .FirstOrDefault(s => ClipboardMonitor.IsUrl(s)
+                            || s.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase)
+                            || s.StartsWith("ed2k://", StringComparison.OrdinalIgnoreCase));
                     if (firstUrl != null)
                     {
                         NavDownload.IsSelected = true;
-                        _downloadView?.SetUrl(firstUrl);
-                        SetStatus("已通过拖放填入链接", 3000);
+                        // magnet/ed2k 直接提交
+                        if (firstUrl.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase)
+                            || firstUrl.StartsWith("ed2k://", StringComparison.OrdinalIgnoreCase))
+                        {
+                            _downloadView?.ViewModel.Url = firstUrl;
+                            _downloadView?.ViewModel.Start();
+                            SetStatus("已通过拖放添加下载", 3000);
+                        }
+                        else
+                        {
+                            _downloadView?.SetUrl(firstUrl);
+                            SetStatus("已通过拖放填入链接", 3000);
+                        }
                     }
                 }
             }
@@ -958,22 +1023,22 @@ namespace TDM
                 }
 
                 // 2) 高光水波纹扫过（用渐变 brush 动画）
-                if (ThemeSweep != null && ThemeSweep.Fill is LinearGradientBrush lb)
+                if (ThemeSweep != null && this.Resources["ThemeSweepBrushResource"] is LinearGradientBrush sweep)
                 {
                     ThemeSweep.Visibility = Visibility.Visible;
                     ThemeSweep.Opacity = 0;
 
-                    // 如果 brush 已冻结（XAML 加载时可能被自动 Freeze），Clone 一份
-                    var sweep = lb.IsFrozen ? lb.Clone() : lb;
-                    if (lb.IsFrozen) ThemeSweep.Fill = sweep;
+                    // 资源字典中的 brush 可能已冻结（StaticResource），Clone 一份
+                    var brush = sweep.IsFrozen ? sweep.Clone() : sweep;
+                    this.Resources["ThemeSweepBrushResource"] = brush;
 
                     try
                     {
                         // 把高光颜色设为主题色
                         var primary = (Color)Application.Current.Resources["PrimaryColor"];
-                        sweep.GradientStops[0].Color = Color.FromArgb(0, primary.R, primary.G, primary.B);
-                        sweep.GradientStops[1].Color = Color.FromArgb(90, primary.R, primary.G, primary.B);
-                        sweep.GradientStops[2].Color = Color.FromArgb(0, primary.R, primary.G, primary.B);
+                        brush.GradientStops[0].Color = Color.FromArgb(0, primary.R, primary.G, primary.B);
+                        brush.GradientStops[1].Color = Color.FromArgb(90, primary.R, primary.G, primary.B);
+                        brush.GradientStops[2].Color = Color.FromArgb(0, primary.R, primary.G, primary.B);
 
                         // 从左 → 右移动高光中心（用 brush 自身的 StartPoint/EndPoint 动画）
                         var startAnim = new PointAnimation(new Point(-1, 0), new Point(0, 0), TimeSpan.FromMilliseconds(700))
@@ -984,8 +1049,8 @@ namespace TDM
                         {
                             EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut }
                         };
-                        sweep.BeginAnimation(LinearGradientBrush.StartPointProperty, startAnim);
-                        sweep.BeginAnimation(LinearGradientBrush.EndPointProperty, endAnim);
+                        brush.BeginAnimation(LinearGradientBrush.StartPointProperty, startAnim);
+                        brush.BeginAnimation(LinearGradientBrush.EndPointProperty, endAnim);
                     }
                     catch (Exception ex) { Logger.Warn("高光 brush 动画失败: " + ex.Message); }
 

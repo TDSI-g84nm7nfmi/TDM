@@ -19,14 +19,11 @@
 
             <!-- 头部品牌 -->
             <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,0,0,18">
-                <Border Width="72" Height="72" CornerRadius="20"
-                        Background="{StaticResource BrandGradientBrush}"
-                        Effect="{StaticResource PrimaryGlow}"
-                        HorizontalAlignment="Center" Margin="0,0,0,14">
-                    <TextBlock Text="T" FontFamily="{StaticResource UIFontFamily}"
-                               FontSize="38" FontWeight="Bold" Foreground="White"
-                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Border>
+                <Image Width="64" Height="64" Stretch="Uniform"
+                       Source="pack://application:,,,/image/icon.png"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       RenderOptions.BitmapScalingMode="HighQuality"
+                       Margin="0,0,0,14"/>
                 <TextBlock Text="TDSI Download Manager" Style="{StaticResource H1}"
                            HorizontalAlignment="Center"/>
                 <TextBlock x:Name="VersionText" Text="v1.0.0"
@@ -48,13 +45,21 @@
                     </TextBlock>
                     <Border Height="1" Background="{StaticResource DividerBrush}" Margin="0,14,0,14"/>
                     <DockPanel Margin="0,0,0,8">
-                        <TextBlock Text="作者：" Style="{StaticResource SubText}" VerticalAlignment="Center"/>
-                        <TextBlock Margin="6,0,0,0" VerticalAlignment="Center">
-                            <Hyperlink x:Name="AuthorLink" Click="OnAuthorClick" Foreground="{StaticResource PrimaryBrush}"
-                                       TextDecorations="None" FontWeight="SemiBold">B站@会飞的附魔下界合金剑</Hyperlink>
-                        </TextBlock>
+                        <Border Width="40" Height="40" CornerRadius="20" Margin="0,0,10,0" VerticalAlignment="Center"
+                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                            <Image Source="pack://application:,,,/image/avatar.jpg" Stretch="UniformToFill"
+                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="作者" Style="{StaticResource SubText}" FontSize="11" Margin="0,0,0,2"/>
+                            <TextBlock>
+                                <Hyperlink x:Name="AuthorLink" Click="OnAuthorClick" Foreground="{StaticResource PrimaryBrush}"
+                                           TextDecorations="None" FontWeight="SemiBold">B站@会飞的附魔下界合金剑</Hyperlink>
+                            </TextBlock>
+                        </StackPanel>
                     </DockPanel>
-                    <DockPanel>
+                    <DockPanel Margin="0,0,0,8">
+                        <Path Width="14" Height="14" Stretch="Uniform" Fill="{StaticResource SubTextBrush}" Data="{StaticResource IconGithub}" Margin="0,0,8,0" VerticalAlignment="Center"/>
                         <TextBlock Text="项目：" Style="{StaticResource SubText}" VerticalAlignment="Center"/>
                         <TextBlock Margin="6,0,0,0" VerticalAlignment="Center">
                             <Hyperlink x:Name="GithubLink" Click="OnGithubClick" Foreground="{StaticResource PrimaryBrush}"
@@ -77,8 +82,13 @@
                         </TextBlock>
                     </StackPanel>
                 </Border>
-                <Button Style="{StaticResource PrimaryButton}" Content="关闭" Width="90" Height="38"
-                        Click="OnCloseClick" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="12,12,0,0"/>
+                <Button Style="{StaticResource PrimaryButton}" Width="90" Height="38"
+                        Click="OnCloseClick" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="12,12,0,0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Path Width="14" Height="14" Stretch="Uniform" Stroke="White" StrokeThickness="2" Fill="Transparent" Data="{StaticResource IconClose}" Margin="0,0,5,0"/>
+                        <TextBlock Text="关闭" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
             </DockPanel>
         </Grid>
     </Border>

@@ -201,6 +201,10 @@ namespace TDM.Converters
                 "已暂停" or "Paused" => new SolidColorBrush(Color.FromRgb(0xff, 0x98, 0x00)),
                 "错误" or "Failed" or "失败" => new SolidColorBrush(Color.FromRgb(0xf4, 0x43, 0x36)),
                 "等待中" or "Pending" or "队列中" or "连接中" => new SolidColorBrush(Color.FromRgb(0x9e, 0x9e, 0x9e)),
+                // 协议徽章
+                "HTTP" => new SolidColorBrush(Color.FromRgb(0x4f, 0x8b, 0xff)),
+                "BT" => new SolidColorBrush(Color.FromRgb(0x1b, 0xc9, 0x82)),
+                "eD2k" => new SolidColorBrush(Color.FromRgb(0x6e, 0xc6, 0xff)),
                 _ => new SolidColorBrush(Color.FromRgb(0x9e, 0x9e, 0x9e)),
             };
         }

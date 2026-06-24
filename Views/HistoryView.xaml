@@ -13,9 +13,6 @@
         <conv:StatusToBrushConverter x:Key="StatusToBrush"/>
         <conv:CountToVisibilityConverter x:Key="CountToVis"/>
     </UserControl.Resources>
-    <UserControl.DataContext>
-        <vm:HistoryViewModel/>
-    </UserControl.DataContext>
 
     <Grid Margin="24,20,24,16">
         <Grid.RowDefinitions>
@@ -37,15 +34,47 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="FilterBox" Grid.Column="0" Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged, Delay=300}"
-                         Style="{StaticResource ModernTextBox}" MaxWidth="320" HorizontalAlignment="Left"
-                         ToolTip="搜索文件名或 URL"/>
+                <Grid Grid.Column="0" MaxWidth="320" HorizontalAlignment="Left">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Path Grid.Column="0" Width="14" Height="14" Stretch="Uniform" Fill="{StaticResource SubTextBrush}" Data="{StaticResource IconSearch}" Margin="12,0,8,0" VerticalAlignment="Center"/>
+                    <TextBox x:Name="FilterBox" Grid.Column="1" Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged, Delay=300}"
+                             Style="{StaticResource ModernTextBox}" BorderThickness="0" Background="Transparent" Padding="0,8"
+                             ToolTip="搜索文件名或 URL"/>
+                </Grid>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <Button Style="{StaticResource GhostButton}" Content="打开目录" Command="{Binding OpenFolderCommand}" Padding="12,5" Margin="0,0,4,0"/>
-                    <Button Style="{StaticResource GhostButton}" Content="复制链接" Command="{Binding CopyUrlCommand}" Padding="12,5" Margin="0,0,4,0"/>
-                    <Button Style="{StaticResource SecondaryButton}" Content="重新下载" Command="{Binding RetryCommand}" Padding="12,5" Margin="0,0,4,0"/>
-                    <Button Style="{StaticResource GhostButton}" Content="删除" Command="{Binding RemoveCommand}" Padding="12,5" Margin="0,0,4,0"/>
-                    <Button Style="{StaticResource DangerButton}" Content="清空" Command="{Binding ClearCommand}" Padding="12,5"/>
+                    <Button Style="{StaticResource GhostButton}" Command="{Binding OpenFolderCommand}" Padding="10,5" Margin="0,0,4,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Path Width="12" Height="12" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="{StaticResource IconFolder}" Margin="0,0,4,0"/>
+                            <TextBlock Text="打开目录" VerticalAlignment="Center" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource GhostButton}" Command="{Binding CopyUrlCommand}" Padding="10,5" Margin="0,0,4,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Path Width="12" Height="12" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="{StaticResource IconCopy}" Margin="0,0,4,0"/>
+                            <TextBlock Text="复制链接" VerticalAlignment="Center" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource SecondaryButton}" Command="{Binding RetryCommand}" Padding="10,5" Margin="0,0,4,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Path Width="12" Height="12" Stretch="Uniform" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.8" Fill="Transparent" Data="{StaticResource IconRefresh}" Margin="0,0,4,0"/>
+                            <TextBlock Text="重新下载" VerticalAlignment="Center" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource GhostButton}" Command="{Binding RemoveCommand}" Padding="10,5" Margin="0,0,4,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Path Width="12" Height="12" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Data="{StaticResource IconTrash}" Margin="0,0,4,0"/>
+                            <TextBlock Text="删除" VerticalAlignment="Center" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource DangerButton}" Command="{Binding ClearCommand}" Padding="10,5">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Path Width="12" Height="12" Stretch="Uniform" Fill="White" Data="{StaticResource IconTrash}" Margin="0,0,4,0"/>
+                            <TextBlock Text="清空" VerticalAlignment="Center" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </Grid>
         </Border>
@@ -108,7 +137,7 @@
                             Visibility="{Binding Entries.Count, Converter={StaticResource CountToVis}, ConverterParameter=invert}">
                     <Border Width="80" Height="80" CornerRadius="40" Background="#1A4F8BFF" HorizontalAlignment="Center">
                         <Path Width="36" Height="36" Stretch="Uniform" Fill="{StaticResource PrimaryBrush}"
-                              Data="M12,3 v10 M7,9 l5,5 5,-5 M5,21 h14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                              Data="{StaticResource IconHistory}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <TextBlock Text="暂无下载历史" Style="{StaticResource H3}" HorizontalAlignment="Center" Margin="0,16,0,4"/>
                     <TextBlock Text="完成的下载会出现在这里" Style="{StaticResource BodySecondary}" HorizontalAlignment="Center"/>
