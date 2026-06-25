@@ -46,7 +46,7 @@
                     <Border Height="1" Background="{StaticResource DividerBrush}" Margin="0,14,0,14"/>
                     <DockPanel Margin="0,0,0,8">
                         <Border Width="40" Height="40" CornerRadius="20" Margin="0,0,10,0" VerticalAlignment="Center"
-                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                ClipToBounds="True">
                             <Image Source="pack://application:,,,/image/avatar.jpg" Stretch="UniformToFill"
                                    RenderOptions.BitmapScalingMode="HighQuality"/>
                         </Border>

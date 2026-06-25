@@ -179,16 +179,28 @@ Copyright (c) 2024-2026 B站@会飞的附魔下界合金剑
     utf16_script = script_path + '.utf16.nsi'
     with open(script_path, 'rb') as f:
         data = f.read()
+    
     if data.startswith(b'\xff\xfe'):
-        # 已经是 UTF-16LE
         import shutil as _sh
         _sh.copy2(script_path, utf16_script)
-    else:
-        if data.startswith(b'\xef\xbb\xbf'):
-            data = data[3:]
-        text = data.decode('utf-8')
+    elif data.startswith(b'\xef\xbb\xbf'):
+        text = data[3:].decode('utf-8')
         with open(utf16_script, 'wb') as f:
             f.write(b'\xff\xfe' + text.encode('utf-16-le'))
+    else:
+        try:
+            text = data.decode('utf-8')
+            with open(utf16_script, 'wb') as f:
+                f.write(b'\xff\xfe' + text.encode('utf-16-le'))
+        except UnicodeDecodeError:
+            try:
+                text = data.decode('gbk')
+                with open(utf16_script, 'wb') as f:
+                    f.write(b'\xff\xfe' + text.encode('utf-16-le'))
+            except:
+                print("警告：无法正确解码 installer.nsi，尝试直接复制")
+                import shutil as _sh
+                _sh.copy2(script_path, utf16_script)
 
     result = subprocess.run([makensis, utf16_script], capture_output=True, text=True, cwd=dist_dir)
     print(result.stdout)
@@ -201,6 +213,12 @@ Copyright (c) 2024-2026 B站@会飞的附魔下界合金剑
         size_mb = os.path.getsize(installer) / 1024 / 1024
         print("安装包生成成功！")
         print(f"  dist\\TDSI-Download-Manager-Setup.exe ({size_mb:.1f} MB)")
+
+        web_assets_dir = os.path.join(current_dir, 'Web Page', 'assets')
+        os.makedirs(web_assets_dir, exist_ok=True)
+        web_installer = os.path.join(web_assets_dir, 'TDSI-Download-Manager-Setup.exe')
+        shutil.copy2(installer, web_installer)
+        print(f"  已复制到 Web Page\\assets\\TDSI-Download-Manager-Setup.exe")
     else:
         print("安装包生成失败！")
 

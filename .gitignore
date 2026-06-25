@@ -15,6 +15,7 @@ dist/installer.nsi.utf16.nsi
 dist/*.bmp
 dist/icon.ico
 dist/setup.ico
+Web Page/assets/*.exe
 
 # Python 虚拟环境
 .venv/
