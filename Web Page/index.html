@@ -1,1 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>TDM - TDSI Download Manager</title>
+    <link rel="icon" href="image/tdm-icon.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #111827;
+            --bg-card: rgba(17, 24, 39, 0.8);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-cyan: #00d4ff;
+            --accent-green: #00ff88;
+            --accent-purple: #7c3aed;
+            --accent-gold: #fbbf24;
+            --accent-red: #ef4444;
+            --border-glow: rgba(0, 212, 255, 0.15);
+            --border-subtle: rgba(148, 163, 184, 0.1);
+            --font-heading: 'Outfit', 'Noto Sans SC', sans-serif;
+            --font-body: 'Noto Sans SC', 'Outfit', sans-serif;
+            --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        html.fading {
+            opacity: 0;
+            transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            user-select: none;
+            opacity: 0;
+            animation: pageFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes pageFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        #starfieldCanvas {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; position: relative; z-index: 2; }
+
+        /* ===== 导航栏 ===== */
+        .glass-nav {
+            position: fixed; top: 16px; left: 40px; right: 40px; z-index: 1000;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border-radius: 60px; padding: 10px 28px; min-height: 56px;
+            border: 1px solid var(--border-glow);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 20px rgba(0,212,255,0.03) inset;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+            will-change: background;
+        }
+        .glass-nav.scrolled {
+            background: rgba(10, 10, 15, 0.92);
+        }
+        .glass-nav .hdr {
+            display: flex; align-items: center; justify-content: space-between;
+            max-width: 1200px; margin: 0 auto;
+        }
+        .brand {
+            display: flex; align-items: center; gap: 10px;
+            font-family: var(--font-heading); font-weight: 700; font-size: 15px;
+            color: var(--accent-cyan); text-decoration: none; white-space: nowrap;
+        }
+        .brand img { width: 32px; height: 32px; border-radius: 8px; }
+        .brand .ver { font-size: 11px; color: var(--text-muted); font-weight: 500; padding: 2px 8px; background: rgba(0,212,255,0.06); border-radius: 10px; border: 1px solid rgba(0,212,255,0.1); margin-left: 4px; }
+        nav ul { display: flex; list-style: none; gap: 2px; align-items: center; }
+        nav a {
+            color: var(--text-secondary); text-decoration: none;
+            font-size: 13px; font-weight: 500; padding: 8px 16px; border-radius: 20px;
+            transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
+            background: transparent; border: 1px solid transparent; white-space: nowrap;
+        }
+        nav a:hover, nav a.active {
+            color: var(--accent-cyan); background: rgba(0, 212, 255, 0.08);
+            border-color: rgba(0, 212, 255, 0.15);
+        }
+        .nav-right { display: flex; gap: 8px; align-items: center; }
+        .gh-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 16px; border-radius: 20px;
+            background: rgba(0, 212, 255, 0.06); border: 1px solid rgba(0, 212, 255, 0.15);
+            color: var(--accent-cyan); font-size: 13px; font-weight: 500; text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .gh-btn:hover { background: rgba(0, 212, 255, 0.12); border-color: rgba(0, 212, 255, 0.3); }
+
+        /* ===== Hero ===== */
+        .hero {
+            position: relative; min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; padding: 100px 20px 60px;
+        }
+        .hero-bg-glow { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+        .hero-bg-glow::before {
+            content: ''; position: absolute; top: -20%; left: -10%; width: 60%; height: 60%;
+            background: radial-gradient(circle, rgba(0,212,255,0.08) 0%, transparent 60%);
+            animation: heroGlow1 12s ease-in-out infinite alternate;
+        }
+        .hero-bg-glow::after {
+            content: ''; position: absolute; bottom: -20%; right: -10%; width: 50%; height: 50%;
+            background: radial-gradient(circle, rgba(124,58,237,0.06) 0%, transparent 60%);
+            animation: heroGlow2 15s ease-in-out infinite alternate;
+        }
+        @keyframes heroGlow1 { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(5%,5%) scale(1.2); } }
+        @keyframes heroGlow2 { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(-5%,-3%) scale(1.15); } }
+        .hero-content { text-align: center; z-index: 3; position: relative; max-width: 900px; }
+        .hero-icon {
+            width: 120px; height: 120px; margin: 0 auto 24px; border-radius: 28px;
+            display: flex; align-items: center; justify-content: center;
+            animation: floatIcon 6s ease-in-out infinite;
+            will-change: transform;
+        }
+        .hero-icon img { width: 120px; height: 120px; border-radius: 28px; object-fit: cover; }
+        .hero-icon .placeholder {
+            font-size: 56px; font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            font-family: var(--font-heading); letter-spacing: -2px;
+        }
+        @keyframes floatIcon {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-8px) rotate(1deg); }
+            50% { transform: translateY(-12px) rotate(0deg); }
+            75% { transform: translateY(-6px) rotate(-1deg); }
+        }
+        .hero h1 {
+            font-family: var(--font-heading); font-size: 64px; margin-bottom: 8px;
+            font-weight: 800; letter-spacing: -1.5px; line-height: 1.1;
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-green) 50%, var(--accent-purple) 100%);
+            background-size: 200% 200%;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            animation: heroGradient 6s ease infinite;
+        }
+        .hero h2 {
+            font-family: var(--font-heading); font-size: 18px; margin-bottom: 16px;
+            font-weight: 600; color: var(--text-secondary); letter-spacing: 0.5px;
+        }
+        @keyframes heroGradient { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+        .hero p {
+            font-size: 16px; color: var(--text-muted); max-width: 600px; margin: 0 auto 36px; line-height: 1.7;
+        }
+        .btn-container {
+            display: flex; gap: 16px; justify-content: center; align-items: center; flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 16px 36px;
+            background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(0,255,136,0.1));
+            backdrop-filter: blur(12px); color: var(--accent-cyan);
+            text-decoration: none; border-radius: 36px;
+            font-family: var(--font-heading); font-weight: 600; font-size: 15px;
+            transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+            box-shadow: 0 0 30px rgba(0,212,255,0.1), inset 0 1px 0 rgba(255,255,255,0.05);
+            border: 1px solid rgba(0,212,255,0.25);
+            position: relative; overflow: hidden; cursor: pointer;
+        }
+        .btn::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(0,212,255,0.1) 0%, transparent 50%);
+            opacity: 0; transition: opacity 0.4s ease;
+        }
+        .btn:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 0 50px rgba(0,212,255,0.2), 0 0 80px rgba(124,58,237,0.1); border-color: rgba(0,212,255,0.4); }
+        .btn:hover::before { opacity: 1; }
+        .btn:active { transform: translateY(-1px) scale(0.98); }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            color: #0a0a0f; border-color: transparent;
+            box-shadow: 0 0 40px rgba(0,212,255,0.25);
+        }
+        .btn-primary:hover { box-shadow: 0 0 60px rgba(0,212,255,0.4), 0 0 100px rgba(124,58,237,0.2); }
+        .btn svg { width: 18px; height: 18px; }
+
+        /* ===== Section ===== */
+        .section { padding: 80px 0; }
+        .section-title {
+            text-align: center; margin-bottom: 12px;
+            font-family: var(--font-heading); font-size: 36px; font-weight: 800;
+            color: var(--text-primary); position: relative; padding-bottom: 20px; letter-spacing: 1px;
+        }
+        .section-title::after {
+            content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+            width: 80px; height: 3px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+            border-radius: 2px; box-shadow: 0 0 20px rgba(0,212,255,0.3);
+        }
+        .section-subtitle {
+            text-align: center; color: var(--text-muted);
+            margin-top: 20px; margin-bottom: 40px; font-size: 14px;
+            letter-spacing: 1px; position: relative; font-weight: 500;
+        }
+        .section-subtitle::before, .section-subtitle::after {
+            content: '◆'; color: var(--accent-cyan); margin: 0 12px; opacity: 0.4; font-size: 8px; vertical-align: middle;
+        }
+
+        /* ===== Features ===== */
+        .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; padding: 0 20px; margin-top: 32px; }
+        .feature-item {
+            background: var(--bg-card); backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            padding: 32px 24px; border-radius: 20px; text-align: center;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid var(--border-subtle);
+            position: relative; overflow: hidden;
+        }
+        .feature-item::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0,212,255,0.2), transparent); pointer-events: none;
+        }
+        .feature-item:hover {
+            transform: translateY(-8px); border-color: var(--border-glow);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.4), 0 0 30px rgba(0,212,255,0.06);
+        }
+        .feature-icon {
+            width: 64px; height: 64px; margin: 0 auto 20px; border-radius: 16px;
+            background: linear-gradient(135deg, rgba(0,212,255,0.1), rgba(124,58,237,0.06));
+            display: flex; align-items: center; justify-content: center;
+            color: var(--accent-cyan);
+            transition: all 0.4s cubic-bezier(0.16,1,0.3,1);
+            box-shadow: 0 0 20px rgba(0,212,255,0.08);
+        }
+        .feature-item:hover .feature-icon { transform: scale(1.1); box-shadow: 0 0 30px rgba(0,212,255,0.2); }
+        .feature-icon svg { width: 28px; height: 28px; }
+        .feature-item h3 { margin-bottom: 8px; font-size: 18px; color: var(--text-primary); font-weight: 600; font-family: var(--font-heading); }
+        .feature-item .feature-en { font-size: 11px; color: var(--text-muted); margin-bottom: 12px; font-family: var(--font-heading); letter-spacing: 0.5px; }
+        .feature-item p { font-size: 13px; line-height: 1.7; color: var(--text-secondary); }
+
+        /* ===== Download Cards ===== */
+        .download-grid { display: grid; grid-template-columns: minmax(280px, 380px); gap: 20px; padding: 0 20px; margin-top: 32px; justify-content: center; }
+        .download-card {
+            background: var(--bg-card); backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            padding: 28px; border-radius: 20px;
+            border: 1px solid var(--border-subtle);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+            position: relative; overflow: hidden;
+        }
+        .download-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0,212,255,0.2), transparent); pointer-events: none;
+        }
+        .download-card:hover {
+            transform: translateY(-4px); border-color: var(--border-glow);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(0,212,255,0.05);
+        }
+        .download-card .platform {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-family: var(--font-heading); font-size: 13px; font-weight: 600;
+            color: var(--accent-cyan); margin-bottom: 6px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .download-card .platform svg { width: 18px; height: 18px; }
+        .download-card h3 { font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; font-family: var(--font-heading); }
+        .download-card .arch { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+        .download-card .info-row {
+            display: flex; justify-content: space-between; padding: 6px 0;
+            font-size: 13px; border-bottom: 1px solid var(--border-subtle);
+        }
+        .download-card .info-row:last-of-type { border-bottom: none; margin-bottom: 16px; }
+        .download-card .info-label { color: var(--text-muted); }
+        .download-card .info-value { color: var(--text-secondary); font-weight: 600; font-family: var(--font-mono); }
+        .download-card .dl-btn {
+            display: block; width: 100%; padding: 12px 20px; margin-top: 8px;
+            background: linear-gradient(135deg, rgba(0,212,255,0.1), rgba(124,58,237,0.06));
+            color: var(--accent-cyan); text-decoration: none; text-align: center;
+            border-radius: 12px; font-weight: 600; font-size: 14px;
+            border: 1px solid rgba(0,212,255,0.15);
+            transition: all 0.3s ease;
+        }
+        .download-card .dl-btn:hover {
+            background: linear-gradient(135deg, rgba(0,212,255,0.18), rgba(124,58,237,0.1));
+            border-color: rgba(0,212,255,0.3);
+            transform: translateY(-1px);
+        }
+        .download-card .dl-btn.disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+
+        /* ===== Preview ===== */
+        .preview-box {
+            background: var(--bg-card); backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-radius: 20px; padding: 20px; margin: 40px 20px 0;
+            border: 1px solid var(--border-subtle); box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+            overflow: hidden; position: relative;
+        }
+        .preview-window {
+            background: #0a0a0f; border-radius: 12px; overflow: hidden;
+            border: 1px solid rgba(0,212,255,0.15);
+        }
+        .preview-titlebar {
+            display: flex; align-items: center; gap: 8px; padding: 12px 16px;
+            background: rgba(17,24,39,0.9); border-bottom: 1px solid var(--border-subtle);
+        }
+        .preview-titlebar .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .preview-titlebar .dot.r { background: #ef4444; }
+        .preview-titlebar .dot.y { background: #fbbf24; }
+        .preview-titlebar .dot.g { background: #00ff88; }
+        .preview-titlebar .title { margin-left: 12px; font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+        .preview-body {
+            padding: 32px 24px; min-height: 280px;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, rgba(0,212,255,0.03), rgba(124,58,237,0.02));
+        }
+        .preview-placeholder {
+            text-align: center; color: var(--text-muted);
+            font-size: 14px; line-height: 1.7;
+        }
+        .preview-placeholder .big-icon {
+            font-size: 64px; margin-bottom: 16px; opacity: 0.4;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            font-weight: 800;
+        }
+
+        /* ===== Footer ===== */
+        .glass-footer {
+            position: relative; z-index: 2; margin-top: 60px; padding: 28px 40px; width: 100%;
+            background: rgba(10, 10, 15, 0.9);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-top: 1px solid var(--border-subtle);
+        }
+        .glass-footer .footer-content { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+        .glass-footer .footer-text p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+        .glass-footer .footer-links { display: flex; gap: 8px; flex-wrap: wrap; }
+        .glass-footer .footer-links a { color: var(--text-secondary); text-decoration: none; font-size: 12px; padding: 2px 10px; border-radius: 8px; transition: all 0.3s ease; }
+        .glass-footer .footer-links a:hover { color: var(--accent-cyan); }
+
+        @media (max-width: 900px) {
+            .glass-nav { left: 12px; right: 12px; top: 10px; border-radius: 20px; padding: 8px 14px; }
+            .hero { min-height: auto; padding: 100px 20px 60px; }
+            .hero h1 { font-size: 40px; }
+            .hero h2 { font-size: 15px; }
+            .feature-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 600px) {
+            .hero h1 { font-size: 32px; }
+            nav ul { display: none; }
+            .hero-icon { width: 100px; height: 100px; }
+            .hero-icon .placeholder { font-size: 44px; }
+            .glass-footer { padding: 20px; }
+            .glass-footer .footer-content { flex-direction: column; text-align: center; }
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.15); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0,212,255,0.25); }
+    </style>
+</head>
+<body>
+    <canvas id="starfieldCanvas"></canvas>
+
+    <header class="glass-nav" id="mainNav">
+        <div class="hdr">
+            <a href="index.html" class="brand">
+                <img src="image/tdm-icon.png" alt="TDM">
+                <span>TDM</span>
+                <span class="ver">v1.0</span>
+            </a>
+            <nav>
+                <ul>
+                    <li><a href="#home" class="active">首页</a></li>
+                    <li><a href="#features">功能特性</a></li>
+                    <li><a href="#download">下载</a></li>
+                    <li><a href="https://tdsi.top" target="_blank">TDSI 主页</a></li>
+                </ul>
+            </nav>
+            <div class="nav-right">
+                <a href="https://github.com/TDSI-g84nm7nfmi/TDM" target="_blank" class="gh-btn">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+                    GitHub
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <section id="home" class="hero">
+        <div class="hero-bg-glow"></div>
+        <div class="hero-content">
+            <div class="hero-icon">
+                <img src="image/tdm-icon.png" alt="TDM">
+            </div>
+            <h1>TDM</h1>
+            <h2>TDSI Download Manager</h2>
+            <p>由 TDSI 团队出品的现代化下载管理器。简洁高效、稳定可靠，专为追求极致下载体验的用户打造。</p>
+            <div class="btn-container">
+                <a href="#download" class="btn btn-primary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    立即下载
+                </a>
+                <a href="https://github.com/TDSI-g84nm7nfmi/TDM" target="_blank" class="btn">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+                    查看 GitHub
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="section">
+        <div class="container">
+            <h2 class="section-title">功能特性</h2>
+            <p class="section-subtitle">Features · 现代化下载体验</p>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    </div>
+                    <h3>多线程加速</h3>
+                    <p class="feature-en">Multi-Thread Acceleration</p>
+                    <p>支持多线程并发下载，充分利用带宽，下载速度提升数倍。</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><polyline points="21 4 21 10 15 10"/></svg>
+                    </div>
+                    <h3>断点续传</h3>
+                    <p class="feature-en">Resume Support</p>
+                    <p>网络中断后可继续下载，意外关闭后自动恢复任务进度。</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="9" x2="9" y2="15"/><line x1="15" y1="9" x2="15" y2="15"/></svg>
+                    </div>
+                    <h3>任务管理</h3>
+                    <p class="feature-en">Task Manager</p>
+                    <p>清晰的队列管理、批量操作、优先级调整，掌控所有下载任务。</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <h3>安全可靠</h3>
+                    <p class="feature-en">Safe &amp; Reliable</p>
+                    <p>校验文件完整性，过滤恶意链接，保护您的设备与数据安全。</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    </div>
+                    <h3>极速下载</h3>
+                    <p class="feature-en">Lightning Fast</p>
+                    <p>智能带宽检测与优化，充分利用网络资源，下载速度远超浏览器。</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    </div>
+                    <h3>开源免费</h3>
+                    <p class="feature-en">Open Source</p>
+                    <p>完全开源、永久免费，欢迎贡献代码，共同打造更好的下载工具。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" style="padding-top:0">
+        <div class="container">
+            <div class="preview-box">
+                <div class="preview-window">
+                    <div class="preview-titlebar">
+                        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+                        <span class="title">TDM — TDSI Download Manager</span>
+                    </div>
+                    <div class="preview-body">
+                        <div class="preview-placeholder">
+                            <div class="big-icon">⬇</div>
+                            <p>应用预览图</p>
+                            <p style="font-size:12px;margin-top:4px">e...暂无截图hhh</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="download" class="section" style="padding-top:40px">
+        <div class="container">
+            <h2 class="section-title">下载</h2>
+            <p class="section-subtitle">Download · Windows 版本</p>
+            <div class="download-grid">
+                <div class="download-card">
+                    <div class="platform">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.451H0V3.449zM10.949 1.949L24 0v11.4H10.95V1.949zM0 12.6h9.75v9.451L0 20.699V12.6zM10.949 12.6H24V24l-13.05-1.949V12.6z"/></svg>
+                        Windows
+                    </div>
+                    <h3>Windows 版</h3>
+                    <div class="arch">x64 · 64-bit · NSIS 安装包</div>
+                    <div class="info-row"><span class="info-label">版本</span><span class="info-value">v1.0.0</span></div>
+                    <div class="info-row"><span class="info-label">大小</span><span class="info-value">48.7 MB</span></div>
+                    <div class="info-row"><span class="info-label">更新</span><span class="info-value">2026-06-25</span></div>
+                    <a href="https://github.com/TDSI-g84nm7nfmi/TDM/releases/download/v1.0.0/TDSI-Download-Manager-Setup.exe" class="dl-btn">立即下载</a>
+                </div>
+
+            </div>
+            <p style="text-align:center;margin-top:32px;color:var(--text-muted);font-size:13px;">
+                所有版本均可在
+                <a href="https://github.com/TDSI-g84nm7nfmi/TDM/releases" target="_blank" style="color:var(--accent-cyan);text-decoration:none;font-weight:600;">GitHub Releases</a>
+                获取 · 支持旧版本下载
+            </p>
+        </div>
+    </section>
+
+    <footer class="glass-footer">
+        <div class="footer-content">
+            <div class="footer-text">
+                <p>Copyright &copy; 2026 TDSI Team · TDM Download Manager</p>
+                <p style="margin-top:4px;font-size:11px;color:var(--text-muted);">
+                    作者：B站@会飞的附魔下界合金剑 ·
+                    <a href="https://github.com/TDSI-g84nm7nfmi/TDM" target="_blank" style="color:var(--accent-cyan);text-decoration:none;">GitHub</a>
+                </p>
+            </div>
+            <div class="footer-links">
+                <a href="https://tdsi.top" target="_blank">TDSI 主页</a>
+                <span class="sep" style="color:var(--text-muted);">|</span>
+                <a href="https://github.com/TDSI-g84nm7nfmi/TDM" target="_blank">GitHub</a>
+                <span class="sep" style="color:var(--text-muted);">|</span>
+                <a href="https://github.com/TDSI-g84nm7nfmi/TDM/issues" target="_blank">反馈</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 滚动时导航栏变化
+        var nav = document.getElementById('mainNav');
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 20) nav.classList.add('scrolled');
+            else nav.classList.remove('scrolled');
+        });
+
+        // 平滑滚动锚点
+        document.querySelectorAll('a[href^="#"]').forEach(function(a) {
+            a.addEventListener('click', function(e) {
+                var id = a.getAttribute('href');
+                if (id.length > 1) {
+                    var t = document.querySelector(id);
+                    if (t) { e.preventDefault(); t.scrollIntoView({behavior:'smooth', block:'start'}); }
+                }
+            });
+        });
+
+        // 星空背景
+        (function() {
+            var canvas = document.getElementById('starfieldCanvas');
+            if (!canvas) return;
+            var ctx = canvas.getContext('2d');
+            var stars = [];
+            var maxStars = 200;
+            var animationId;
+            
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            
+            function init() {
+                stars = [];
+                var n = Math.min(Math.floor((canvas.width * canvas.height) / 8000), maxStars);
+                for (var i = 0; i < n; i++) {
+                    stars.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        r: Math.random() * 1.2 + 0.1,
+                        a: Math.random() * 0.5 + 0.1,
+                        s: Math.random() * 0.012 + 0.003,
+                        d: Math.random() > 0.5 ? 1 : -1,
+                        ox: Math.random() * Math.PI * 2,
+                        oy: Math.random() * Math.PI * 2
+                    });
+                }
+            }
+            
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                var time = Date.now() * 0.0005;
+                
+                for (var i = 0; i < stars.length; i++) {
+                    var s = stars[i];
+                    s.a += s.s * s.d;
+                    if (s.a > 0.8) s.d = -1;
+                    if (s.a < 0.1) s.d = 1;
+                    
+                    var px = s.x + Math.sin(time + s.ox) * 2;
+                    var py = s.y + Math.cos(time + s.oy) * 2;
+                    
+                    ctx.beginPath();
+                    ctx.arc(px, py, s.r, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(0, 212, 255, ' + s.a + ')';
+                    ctx.fill();
+                }
+                animationId = requestAnimationFrame(draw);
+            }
+            
+            var resizeTimeout;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(function() {
+                    resize();
+                    init();
+                }, 100);
+            });
+            
+            window.addEventListener('visibilitychange', function() {
+                if (document.hidden) {
+                    if (animationId) cancelAnimationFrame(animationId);
+                } else {
+                    draw();
+                }
+            });
+            
+            resize();
+            init();
+            draw();
+        })();
+    </script>
+</body>
 </html>
