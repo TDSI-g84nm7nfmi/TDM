@@ -2,7 +2,6 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
-using Microsoft.Win32;
 using TDM.Models;
 using TDM.Services;
 
@@ -19,6 +18,7 @@ namespace TDM.ViewModels
         private string _sniffStatus = string.Empty;
 
         public ObservableCollection<DownloadItem> ActiveItems { get; } = new();
+        public ObservableCollection<DownloadItem> Items => ActiveItems;
         public ObservableCollection<SniffedResource> Resources { get; } = new();
 
         public string Url
@@ -232,24 +232,46 @@ namespace TDM.ViewModels
         {
             try
             {
-                var dlg = new OpenFileDialog
+                var picker = new Windows.Storage.Pickers.FileOpenPicker
                 {
-                    Title = "选择 BT 种子文件",
-                    Filter = "BT 种子文件 (*.torrent)|*.torrent|所有文件 (*.*)|*.*",
-                    Multiselect = true
+                    SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Downloads
                 };
-                if (dlg.ShowDialog() == true)
+                picker.FileTypeFilter.Add(".torrent");
+                var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.CurrentWindow);
+                WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+                var task = picker.PickMultipleFilesAsync().AsTask();
+                task.Wait();
+                var files = task.Result;
+                if (files != null)
                 {
-                    foreach (var f in dlg.FileNames)
-                    {
-                        LoadTorrentFile(f);
-                    }
+                    foreach (var f in files)
+                        LoadTorrentFile(f.Path);
                 }
             }
             catch (Exception ex)
             {
                 Logger.Error("打开种子文件失败", ex);
             }
+        }
+
+        public void OnViewActivated()
+        {
+        }
+
+        public void AddNewTask()
+        {
+        }
+
+        public void PauseAll()
+        {
+            foreach (var item in ActiveItems.Where(i => i.Status == DownloadStatus.Downloading).ToList())
+                DownloadManager.Instance.Pause(item);
+        }
+
+        public void ResumeAll()
+        {
+            foreach (var item in ActiveItems.Where(i => i.Status == DownloadStatus.Paused).ToList())
+                DownloadManager.Instance.Resume(item);
         }
 
         /// <summary>
@@ -281,11 +303,11 @@ namespace TDM.ViewModels
             _sniffer = new ResourceSniffer(Url);
             _sniffer.ResourceFound += (_, r) =>
             {
-                App.CurrentDispatcher.Invoke(() => Resources.Add(r));
+                App.CurrentDispatcher.TryEnqueue(() => Resources.Add(r));
             };
             _sniffer.Completed += (_, _) =>
             {
-                App.CurrentDispatcher.Invoke(() =>
+                App.CurrentDispatcher.TryEnqueue(() =>
                 {
                     IsSniffing = false;
                     SniffStatus = Resources.Count == 0 ? "未发现可下载资源" : $"找到 {Resources.Count} 个资源";
@@ -293,7 +315,7 @@ namespace TDM.ViewModels
             };
             _sniffer.Failed += (_, msg) =>
             {
-                App.CurrentDispatcher.Invoke(() =>
+                App.CurrentDispatcher.TryEnqueue(() =>
                 {
                     IsSniffing = false;
                     SniffStatus = $"嗅探失败：{msg}";
@@ -301,7 +323,7 @@ namespace TDM.ViewModels
             };
             _sniffer.StatusChanged += (_, msg) =>
             {
-                App.CurrentDispatcher.Invoke(() => SniffStatus = msg);
+                App.CurrentDispatcher.TryEnqueue(() => SniffStatus = msg);
             };
             _sniffer.Start();
         }
@@ -319,12 +341,12 @@ namespace TDM.ViewModels
 
         private void OnItemAdded(object? sender, DownloadItem item)
         {
-            App.CurrentDispatcher.Invoke(() => ActiveItems.Add(item));
+            App.CurrentDispatcher.TryEnqueue(() => ActiveItems.Add(item));
         }
 
         private void OnItemRemoved(object? sender, DownloadItem item)
         {
-            App.CurrentDispatcher.Invoke(() => ActiveItems.Remove(item));
+            App.CurrentDispatcher.TryEnqueue(() => ActiveItems.Remove(item));
         }
     }
 }

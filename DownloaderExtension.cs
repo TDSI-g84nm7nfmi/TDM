@@ -1,191 +1,199 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
-using System.Windows.Media.Animation;
-using System.Windows.Shapes;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 
 namespace TDM.Controls
 {
-    /// <summary>
-    /// 现代化的下载进度控件
-    /// </summary>
     public class ModernProgressBar : Control
     {
-        private Rectangle _progressRect;
-        private Rectangle _backgroundRect;
-        private TextBlock _textBlock;
-        
-        public static readonly DependencyProperty ProgressProperty =
-            DependencyProperty.Register("Progress", typeof(double), typeof(ModernProgressBar),
-                new PropertyMetadata(0.0, OnProgressChanged));
-        
-        public static readonly DependencyProperty ProgressTextProperty =
-            DependencyProperty.Register("ProgressText", typeof(string), typeof(ModernProgressBar),
-                new PropertyMetadata("0%"));
-        
+        private FrameworkElement? _progressElement;
+        private CompositeTransform? _transform;
+
         public double Progress
         {
-            get { return (double)GetValue(ProgressProperty); }
-            set { SetValue(ProgressProperty, value); }
+            get => (double)GetValue(ProgressProperty);
+            set => SetValue(ProgressProperty, value);
         }
-        
+
+        public static readonly DependencyProperty ProgressProperty =
+            DependencyProperty.Register(nameof(Progress), typeof(double), typeof(ModernProgressBar),
+                new PropertyMetadata(0.0, OnProgressChanged));
+
         public string ProgressText
         {
-            get { return (string)GetValue(ProgressTextProperty); }
-            set { SetValue(ProgressTextProperty, value); }
+            get => (string)GetValue(ProgressTextProperty);
+            set => SetValue(ProgressTextProperty, value);
         }
-        
-        static ModernProgressBar()
+
+        public static readonly DependencyProperty ProgressTextProperty =
+            DependencyProperty.Register(nameof(ProgressText), typeof(string), typeof(ModernProgressBar),
+                new PropertyMetadata("0%"));
+
+        public ModernProgressBar()
         {
-            DefaultStyleKeyProperty.OverrideMetadata(typeof(ModernProgressBar), 
-                new FrameworkPropertyMetadata(typeof(ModernProgressBar)));
+            DefaultStyleKey = typeof(ModernProgressBar);
         }
-        
-        public override void OnApplyTemplate()
+
+        protected override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
-            
-            _progressRect = GetTemplateChild("PART_ProgressRect") as Rectangle;
-            _backgroundRect = GetTemplateChild("PART_BackgroundRect") as Rectangle;
-            _textBlock = GetTemplateChild("PART_TextBlock") as TextBlock;
+            _progressElement = GetTemplateChild("PART_ProgressRect") as FrameworkElement;
+            if (_progressElement != null)
+            {
+                _transform = new CompositeTransform();
+                _progressElement.RenderTransform = _transform;
+            }
+            UpdateProgress(Progress, animate: false);
         }
-        
+
         private static void OnProgressChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            var control = d as ModernProgressBar;
-            control?.AnimateProgress((double)e.NewValue);
+            var control = (ModernProgressBar)d;
+            control.UpdateProgress((double)e.NewValue, animate: true);
         }
-        
-        private void AnimateProgress(double newValue)
+
+        private void UpdateProgress(double newValue, bool animate)
         {
-            if (_progressRect == null) return;
-            
-            var animation = new DoubleAnimation(newValue, TimeSpan.FromMilliseconds(300))
+            if (_transform == null) return;
+            double scaleX = Math.Clamp(newValue / 100.0, 0, 1);
+
+            if (animate)
             {
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-            };
-            
-            _progressRect.BeginAnimation(WidthProperty, animation);
+                var anim = new DoubleAnimation
+                {
+                    To = scaleX,
+                    Duration = TimeSpan.FromMilliseconds(300),
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                };
+                Storyboard.SetTarget(anim, _transform);
+                Storyboard.SetTargetProperty(anim, "ScaleX");
+                var sb = new Storyboard();
+                sb.Children.Add(anim);
+                sb.Begin();
+            }
+            else
+            {
+                _transform.ScaleX = scaleX;
+            }
         }
     }
-    
-    /// <summary>
-    /// 文件拖放控件
-    /// </summary>
-    public class FileDropZone : Border
+
+    public class FileDropZone : Control
     {
-        public static readonly DependencyProperty DroppedFilesProperty =
-            DependencyProperty.Register("DroppedFiles", typeof(List<string>), typeof(FileDropZone),
-                new PropertyMetadata(new List<string>()));
-        
         public List<string> DroppedFiles
         {
-            get { return (List<string>)GetValue(DroppedFilesProperty); }
-            set { SetValue(DroppedFilesProperty, value); }
+            get => (List<string>)GetValue(DroppedFilesProperty);
+            set => SetValue(DroppedFilesProperty, value);
         }
-        
-        public event EventHandler<List<string>> FilesDropped;
-        
+
+        public static readonly DependencyProperty DroppedFilesProperty =
+            DependencyProperty.Register(nameof(DroppedFiles), typeof(List<string>), typeof(FileDropZone),
+                new PropertyMetadata(null));
+
+        public event EventHandler<List<string>>? FilesDropped;
+
         public FileDropZone()
         {
             AllowDrop = true;
-            Background = new SolidColorBrush(Colors.Transparent);
-            BorderBrush = new SolidColorBrush(Colors.Gray);
+            Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+            BorderBrush = new SolidColorBrush(Microsoft.UI.Colors.Gray);
             BorderThickness = new Thickness(2);
             CornerRadius = new CornerRadius(8);
-            
+
             Drop += OnDrop;
             DragEnter += OnDragEnter;
             DragLeave += OnDragLeave;
         }
-        
+
         private void OnDrop(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            if (e.DataView.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.StorageItems))
             {
-                var files = (string[])e.Data.GetData(DataFormats.FileDrop);
-                DroppedFiles = new List<string>(files);
-                FilesDropped?.Invoke(this, DroppedFiles);
-                
-                Background = new SolidColorBrush(Colors.Transparent);
+                DropFiles();
             }
         }
-        
+
+        private async void DropFiles()
+        {
+            try
+            {
+                var items = await Windows.ApplicationModel.DataTransfer.Clipboard.GetContent()
+                    .GetStorageItemsAsync();
+                var files = new List<string>();
+                foreach (var item in items)
+                    files.Add(item.Path);
+                DroppedFiles = files;
+                FilesDropped?.Invoke(this, files);
+                Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+            }
+            catch { }
+        }
+
         private void OnDragEnter(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
-            {
-                Background = new SolidColorBrush(Color.FromArgb(50, 0, 150, 255));
-                e.Effects = DragDropEffects.Copy;
-            }
+            e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Copy;
+            Background = new SolidColorBrush(Windows.UI.Color.FromArgb(50, 0, 150, 255));
         }
-        
+
         private void OnDragLeave(object sender, DragEventArgs e)
         {
-            Background = new SolidColorBrush(Colors.Transparent);
+            Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
         }
     }
-    
-    /// <summary>
-    /// 高性能文件下载器
-    /// </summary>
-    public class HighPerformanceDownloader
+
+    public class HighPerformanceDownloader : IDisposable
     {
         private readonly HttpClient _httpClient;
-        
-        public event EventHandler<DownloadProgressEventArgs> ProgressChanged;
-        public event EventHandler<DownloadCompletedEventArgs> DownloadCompleted;
-        
+
+        public event EventHandler<DownloadProgressEventArgs>? ProgressChanged;
+        public event EventHandler<DownloadCompletedEventArgs>? DownloadCompleted;
+
         public HighPerformanceDownloader()
         {
             _httpClient = new HttpClient();
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", 
+            _httpClient.DefaultRequestHeaders.Add("User-Agent",
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
         }
-        
+
         public async Task DownloadFileAsync(string url, string filePath, int bufferSize = 8192)
         {
             try
             {
-                using (var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
+                using var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+                response.EnsureSuccessStatusCode();
+
+                var totalBytes = response.Content.Headers.ContentLength ?? -1;
+                var downloadedBytes = 0L;
+
+                using var contentStream = await response.Content.ReadAsStreamAsync();
+                using var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create, System.IO.FileAccess.Write);
+                var buffer = new byte[bufferSize];
+                int bytesRead;
+
+                while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                 {
-                    response.EnsureSuccessStatusCode();
-                    
-                    var totalBytes = response.Content.Headers.ContentLength ?? -1;
-                    var downloadedBytes = 0L;
-                    
-                    using (var contentStream = await response.Content.ReadAsStreamAsync())
-                    using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+                    await fileStream.WriteAsync(buffer, 0, bytesRead);
+                    downloadedBytes += bytesRead;
+
+                    var progress = totalBytes > 0 ? (double)downloadedBytes / totalBytes : 0;
+                    ProgressChanged?.Invoke(this, new DownloadProgressEventArgs
                     {
-                        var buffer = new byte[bufferSize];
-                        int bytesRead;
-                        
-                        while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
-                        {
-                            await fileStream.WriteAsync(buffer, 0, bytesRead);
-                            downloadedBytes += bytesRead;
-                            
-                            var progress = totalBytes > 0 ? (double)downloadedBytes / totalBytes : 0;
-                            ProgressChanged?.Invoke(this, new DownloadProgressEventArgs
-                            {
-                                BytesReceived = downloadedBytes,
-                                TotalBytesToReceive = totalBytes,
-                                ProgressPercentage = progress * 100
-                            });
-                        }
-                    }
-                    
-                    DownloadCompleted?.Invoke(this, new DownloadCompletedEventArgs
-                    {
-                        FilePath = filePath,
-                        Success = true
+                        BytesReceived = downloadedBytes,
+                        TotalBytesToReceive = totalBytes,
+                        ProgressPercentage = progress * 100
                     });
                 }
+
+                DownloadCompleted?.Invoke(this, new DownloadCompletedEventArgs
+                {
+                    FilePath = filePath,
+                    Success = true
+                });
             }
             catch (Exception ex)
             {
@@ -197,70 +205,57 @@ namespace TDM.Controls
                 });
             }
         }
-        
+
         public void Dispose()
         {
             _httpClient?.Dispose();
         }
     }
-    
+
     public class DownloadProgressEventArgs : EventArgs
     {
         public long BytesReceived { get; set; }
         public long TotalBytesToReceive { get; set; }
         public double ProgressPercentage { get; set; }
     }
-    
+
     public class DownloadCompletedEventArgs : EventArgs
     {
-        public string FilePath { get; set; }
+        public string FilePath { get; set; } = string.Empty;
         public bool Success { get; set; }
-        public Exception Error { get; set; }
+        public Exception? Error { get; set; }
     }
-    
-    /// <summary>
-    /// 动画按钮控件
-    /// </summary>
+
     public class AnimatedButton : Button
     {
-        public static readonly DependencyProperty HoverColorProperty =
-            DependencyProperty.Register("HoverColor", typeof(Brush), typeof(AnimatedButton),
-                new PropertyMetadata(new SolidColorBrush(Colors.LightBlue)));
-        
         public Brush HoverColor
         {
-            get { return (Brush)GetValue(HoverColorProperty); }
-            set { SetValue(HoverColorProperty, value); }
+            get => (Brush)GetValue(HoverColorProperty);
+            set => SetValue(HoverColorProperty, value);
         }
-        
+
+        public static readonly DependencyProperty HoverColorProperty =
+            DependencyProperty.Register(nameof(HoverColor), typeof(Brush), typeof(AnimatedButton),
+                new PropertyMetadata(new SolidColorBrush(Microsoft.UI.Colors.LightBlue)));
+
+        private Brush? _originalBackground;
+
         public AnimatedButton()
         {
-            MouseEnter += OnMouseEnter;
-            MouseLeave += OnMouseLeave;
+            PointerEntered += OnPointerEntered;
+            PointerExited += OnPointerExited;
         }
-        
-        private void OnMouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+
+        private void OnPointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
-            var animation = new ColorAnimation(
-                ((SolidColorBrush)HoverColor).Color,
-                TimeSpan.FromMilliseconds(200))
-            {
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-            };
-            
-            Background.BeginAnimation(SolidColorBrush.ColorProperty, animation);
+            _originalBackground = Background;
+            Background = HoverColor;
         }
-        
-        private void OnMouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+
+        private void OnPointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
-            var animation = new ColorAnimation(
-                Colors.Transparent,
-                TimeSpan.FromMilliseconds(200))
-            {
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-            };
-            
-            Background.BeginAnimation(SolidColorBrush.ColorProperty, animation);
+            if (_originalBackground != null)
+                Background = _originalBackground;
         }
     }
-} 
+}

@@ -1,80 +1,82 @@
 using System;
+using System.Collections;
 using System.Globalization;
-using System.Windows;
-using System.Windows.Data;
-using System.Windows.Media;
+using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Media;
+using Windows.UI;
 
 namespace TDM.Converters
 {
     public class BooleanToVisibilityConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object Convert(object value, Type targetType, object parameter, string language)
         {
             bool flag = value is bool b && b;
             if (parameter is string s && s.Equals("invert", StringComparison.OrdinalIgnoreCase))
                 flag = !flag;
-            return flag ? Visibility.Visible : Visibility.Collapsed;
+            return flag;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
         {
-            return value is Visibility v && v == Visibility.Visible;
+            return value is bool b && b;
         }
     }
 
-    public class InverseBooleanToVisibilityConverter : IValueConverter
+    public class InverseBooleanConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object Convert(object value, Type targetType, object parameter, string language)
         {
-            bool flag = value is bool b && b;
-            return flag ? Visibility.Collapsed : Visibility.Visible;
+            if (value is bool b) return !b;
+            return false;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
         {
-            return value is Visibility v && v != Visibility.Visible;
+            if (value is bool b) return !b;
+            return false;
         }
     }
 
     public class NullToBoolConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object Convert(object value, Type targetType, object parameter, string language)
         {
             bool isNull = value == null
                 || (value is string s && string.IsNullOrEmpty(s))
                 || (value is int i && i == 0)
                 || (value is long l && l == 0)
                 || (value is double d && d == 0)
-                || (value is System.Collections.ICollection c && c.Count == 0);
+                || (value is ICollection c && c.Count == 0);
             if (parameter is string p && p.Equals("invert", StringComparison.OrdinalIgnoreCase))
                 isNull = !isNull;
             return isNull;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
             => throw new NotImplementedException();
     }
 
     public class CountToVisibilityConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object Convert(object value, Type targetType, object parameter, string language)
         {
             int count = 0;
             if (value is int i) count = i;
-            else if (value is System.Collections.ICollection c) count = c.Count;
+            else if (value is ICollection c) count = c.Count;
             bool visible = count > 0;
             if (parameter is string s && s.Equals("invert", StringComparison.OrdinalIgnoreCase))
                 visible = !visible;
-            return visible ? Visibility.Visible : Visibility.Collapsed;
+            return visible;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
             => throw new NotImplementedException();
     }
 
     public class BytesToStringConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object Convert(object value, Type targetType, object parameter, string language)
         {
             long bytes = 0;
             if (value is long l) bytes = l;
@@ -83,7 +85,7 @@ namespace TDM.Converters
             return FormatBytes(bytes);
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
             => throw new NotImplementedException();
 
         public static string FormatBytes(long bytes)
@@ -102,7 +104,7 @@ namespace TDM.Converters
 
     public class SpeedToStringConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object Convert(object value, Type targetType, object parameter, string language)
         {
             double speed = 0;
             if (value is double d) speed = d;
@@ -112,71 +114,13 @@ namespace TDM.Converters
             return $"{BytesToStringConverter.FormatBytes((long)speed)}/s";
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
             => throw new NotImplementedException();
-    }
-
-    public class SecondsToDurationConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is double d) return Format((long)Math.Max(0, d));
-            if (value is long l) return Format(Math.Max(0, l));
-            if (value is int i) return Format(Math.Max(0, i));
-            if (value is TimeSpan ts) return Format((long)ts.TotalSeconds);
-            return "--:--";
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-            => throw new NotImplementedException();
-
-        public static string Format(long seconds)
-        {
-            var t = TimeSpan.FromSeconds(seconds);
-            if (t.TotalHours >= 1)
-                return $"{(int)t.TotalHours:00}:{t.Minutes:00}:{t.Seconds:00}";
-            return $"{t.Minutes:00}:{t.Seconds:00}";
-        }
-    }
-
-    public class EtaConverter : IMultiValueConverter
-    {
-        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (values.Length < 3) return "--:--";
-            long total = ToLong(values[0]);
-            long downloaded = ToLong(values[1]);
-            double speed = ToDouble(values[2]);
-            if (total <= 0 || speed <= 0) return "--:--";
-            long remaining = total - downloaded;
-            if (remaining <= 0) return "00:00";
-            return SecondsToDurationConverter.Format((long)(remaining / speed));
-        }
-
-        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
-            => throw new NotImplementedException();
-
-        private static long ToLong(object v) => v switch
-        {
-            long l => l,
-            int i => i,
-            double d => (long)d,
-            _ => 0
-        };
-
-        private static double ToDouble(object v) => v switch
-        {
-            double d => d,
-            float f => f,
-            long l => l,
-            int i => i,
-            _ => 0
-        };
     }
 
     public class PercentFormatConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object Convert(object value, Type targetType, object parameter, string language)
         {
             double d = 0;
             if (value is double dv) d = dv;
@@ -185,31 +129,30 @@ namespace TDM.Converters
             return $"{d:0.#}%";
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
             => throw new NotImplementedException();
     }
 
     public class StatusToBrushConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object Convert(object value, Type targetType, object parameter, string language)
         {
             string? status = value as string;
             return status switch
             {
-                "完成" or "Completed" => new SolidColorBrush(Color.FromRgb(0x4c, 0xaf, 0x50)),
-                "下载中" or "Downloading" => (System.Windows.Media.Brush)Application.Current.Resources["PrimaryBrush"],
-                "已暂停" or "Paused" => new SolidColorBrush(Color.FromRgb(0xff, 0x98, 0x00)),
-                "错误" or "Failed" or "失败" => new SolidColorBrush(Color.FromRgb(0xf4, 0x43, 0x36)),
-                "等待中" or "Pending" or "队列中" or "连接中" => new SolidColorBrush(Color.FromRgb(0x9e, 0x9e, 0x9e)),
-                // 协议徽章
-                "HTTP" => new SolidColorBrush(Color.FromRgb(0x4f, 0x8b, 0xff)),
-                "BT" => new SolidColorBrush(Color.FromRgb(0x1b, 0xc9, 0x82)),
-                "eD2k" => new SolidColorBrush(Color.FromRgb(0x6e, 0xc6, 0xff)),
-                _ => new SolidColorBrush(Color.FromRgb(0x9e, 0x9e, 0x9e)),
+                "完成" or "Completed" => new SolidColorBrush(Color.FromArgb(255, 0x4c, 0xaf, 0x50)),
+                "下载中" or "Downloading" => new SolidColorBrush(Color.FromArgb(255, 0x4a, 0x9e, 0xff)),
+                "已暂停" or "Paused" => new SolidColorBrush(Color.FromArgb(255, 0xff, 0x98, 0x00)),
+                "错误" or "Failed" or "失败" => new SolidColorBrush(Color.FromArgb(255, 0xf4, 0x43, 0x36)),
+                "等待中" or "Pending" or "队列中" or "连接中" => new SolidColorBrush(Color.FromArgb(255, 0x9e, 0x9e, 0x9e)),
+                "HTTP" => new SolidColorBrush(Color.FromArgb(255, 0x4f, 0x8b, 0xff)),
+                "BT" => new SolidColorBrush(Color.FromArgb(255, 0x1b, 0xc9, 0x82)),
+                "eD2k" => new SolidColorBrush(Color.FromArgb(255, 0x6e, 0xc6, 0xff)),
+                _ => new SolidColorBrush(Color.FromArgb(255, 0x9e, 0x9e, 0x9e)),
             };
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
             => throw new NotImplementedException();
     }
 }

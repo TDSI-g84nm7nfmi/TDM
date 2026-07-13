@@ -68,12 +68,13 @@ namespace TDM.Services
             try
             {
                 Directory.CreateDirectory(App.ConfigDirectory);
-                var json = JsonSerializer.Serialize(_current, new JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
+                string json;
                 lock (_lock)
                 {
+                    json = JsonSerializer.Serialize(_current, new JsonSerializerOptions
+                    {
+                        WriteIndented = true
+                    });
                     File.WriteAllText(SettingsFile, json);
                 }
                 Logger.Info("设置已保存");

@@ -1,27 +1,20 @@
-using System.Windows.Controls;
+using Microsoft.UI.Xaml.Controls;
 using TDM.ViewModels;
 
 namespace TDM.Views
 {
-    public partial class HistoryView : UserControl
+    public sealed partial class HistoryView : Page
     {
-        public HistoryViewModel ViewModel => (HistoryViewModel)DataContext;
+        public HistoryViewModel ViewModel => HistoryViewModel.Instance;
 
         public HistoryView()
         {
             InitializeComponent();
-            DataContext = new HistoryViewModel();
         }
 
-        public void Refresh() => ViewModel.Refresh();
-
-        public void ApplySearchFilter(string keyword)
+        protected override void OnNavigatedTo(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
         {
-            try
-            {
-                ViewModel.Filter = keyword;
-            }
-            catch { }
+            ViewModel.Load();
         }
     }
 }

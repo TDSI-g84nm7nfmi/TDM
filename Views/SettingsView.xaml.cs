@@ -1,138 +1,55 @@
 using System;
-using System.Windows;
-using System.Windows.Controls;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using TDM.Services;
 using TDM.ViewModels;
+using Windows.Storage.Pickers;
+using WinRT.Interop;
 
 namespace TDM.Views
 {
-    public partial class SettingsView : UserControl
+    public sealed partial class SettingsView : Page
     {
-        public SettingsViewModel ViewModel => (SettingsViewModel)DataContext;
+        public SettingsViewModel ViewModel => SettingsViewModel.Instance;
 
         public SettingsView()
         {
             InitializeComponent();
-            DataContext = new SettingsViewModel();
-            ViewModel.ThemeChanged += OnThemeChanged;
-            ViewModel.BlurToggleRequested += OnBlurToggled;
+            LoadSettings();
+        }
 
-            // 初始化主题单选
-            Loaded += (_, _) =>
+        private void LoadSettings()
+        {
+            var s = SettingsService.Current;
+            DownloadPathBox.Text = s.DefaultSaveDir;
+            ThreadSlider.Value = s.DefaultThreads;
+        }
+
+        private async void OnBrowsePathClick(object sender, RoutedEventArgs e)
+        {
+            var picker = new FolderPicker
             {
-                foreach (var rb in FindVisualChildren<RadioButton>(this))
-                {
-                    if (rb.Tag is string tag && tag == ViewModel.SelectedTheme)
-                    {
-                        rb.IsChecked = true;
-                        break;
-                    }
-                }
-                // 同步 ComboBox 选中项
-                try
-                {
-                    foreach (var item in CloseActionBox.Items)
-                    {
-                        if (item is System.Windows.Controls.ComboBoxItem cbi && (cbi.Tag as string) == ViewModel.CloseAction)
-                        {
-                            CloseActionBox.SelectedItem = cbi;
-                            break;
-                        }
-                    }
-                }
-                catch { }
+                SuggestedStartLocation = PickerLocationId.Downloads
             };
-        }
-
-        private void OnThemeChanged(object? sender, string themeName)
-        {
-            if (System.Windows.Forms.SystemInformation.UserInteractive)
+            picker.FileTypeFilter.Add("*");
+            var hwnd = WindowNative.GetWindowHandle(App.CurrentWindow);
+            InitializeWithWindow.Initialize(picker, hwnd);
+            var folder = await picker.PickSingleFolderAsync();
+            if (folder != null)
             {
-                ThemeManager.Set(themeName);
+                DownloadPathBox.Text = folder.Path;
+                SettingsService.Update(s => s.DefaultSaveDir = folder.Path);
             }
         }
 
-        private void OnBlurToggled(object? sender, bool enable)
+        private void OnSaveClick(object sender, RoutedEventArgs e)
         {
-            if (System.Windows.Application.Current.MainWindow is Window w)
+            SettingsService.Update(s =>
             {
-                if (enable) BlurEffectHelper.EnableBlur(w, acrylic: true);
-                else BlurEffectHelper.Disable(w);
-            }
-        }
-
-        private void RadioButton_Checked(object sender, RoutedEventArgs e) { }
-
-        private void OnCloseActionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-        {
-            try
-            {
-                if (CloseActionBox?.SelectedItem is System.Windows.Controls.ComboBoxItem cbi && cbi.Tag is string tag)
-                {
-                    ViewModel.CloseAction = tag;
-                }
-            }
-            catch (Exception ex) { Logger.Warn("更新关闭行为设置失败: " + ex.Message); }
-        }
-
-        private void OnThemeChanged(object sender, RoutedEventArgs e)
-        {
-            if (sender is RadioButton rb && rb.Tag is string tag)
-            {
-                ViewModel.SelectedTheme = tag;
-            }
-        }
-
-        private void OnRescanBrowser(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var browsers = Services.BrowserScanner.Scan();
-                if (browsers.Count == 0)
-                {
-                    System.Windows.MessageBox.Show("未检测到任何 Chromium 内核浏览器。", App.AppName,
-                        System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
-                    return;
-                }
-                var win = new TDM.Windows.ExtensionInstallerWindow(browsers)
-                {
-                    Owner = System.Windows.Application.Current?.MainWindow
-                };
-                win.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show("扫描失败：" + ex.Message, App.AppName,
-                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
-            }
-        }
-
-        private void OnOpenLogWindow(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var win = new TDM.Windows.LogWindow
-                {
-                    Owner = System.Windows.Application.Current?.MainWindow
-                };
-                win.Show();
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show("打开日志窗口失败：" + ex.Message, App.AppName,
-                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
-            }
-        }
-
-        private static System.Collections.Generic.IEnumerable<T> FindVisualChildren<T>(DependencyObject dep) where T : DependencyObject
-        {
-            if (dep == null) yield break;
-            for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(dep); i++)
-            {
-                var child = System.Windows.Media.VisualTreeHelper.GetChild(dep, i);
-                if (child is T t) yield return t;
-                foreach (var c in FindVisualChildren<T>(child)) yield return c;
-            }
+                s.DefaultSaveDir = DownloadPathBox.Text;
+                s.DefaultThreads = (int)ThreadSlider.Value;
+            });
+            SettingsService.Save();
         }
     }
 }

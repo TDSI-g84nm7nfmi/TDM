@@ -3,304 +3,112 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:TDM"
-        xmlns:vm="clr-namespace:TDM.ViewModels"
-        xmlns:views="clr-namespace:TDM.Views"
-        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        xmlns:notify="using:H.NotifyIcon"
         mc:Ignorable="d"
-        Title="TDM · TDSI Download Manager"
-        Width="1100" Height="700"
-        MinWidth="880" MinHeight="560"
-        WindowStartupLocation="CenterScreen"
-        Style="{StaticResource MainWindowStyle}"
-        Background="Transparent"
-        WindowStyle="None"
-        ResizeMode="CanResize"
-        AllowsTransparency="True"
-        AllowDrop="True"
-        Drop="OnWindowDrop"
-        DragEnter="OnWindowDragEnter">
+        Title="TDM · TDSI Download Manager">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="48"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="32"/>
+        </Grid.RowDefinitions>
 
-    <Window.TaskbarItemInfo>
-        <TaskbarItemInfo/>
-    </Window.TaskbarItemInfo>
+        <!-- 标题栏 -->
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Background="{ThemeResource SystemChromeLowColor}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Image Grid.Column="0" Width="20" Height="20" Stretch="Uniform"
+                   Source="ms-appx:///image/icon.png" Margin="12,0,8,0"/>
+            <TextBlock Grid.Column="0" Text="TDM" VerticalAlignment="Center"
+                       FontSize="13" FontWeight="SemiBold" Margin="40,0,0,0"/>
 
-    <Window.Resources>
-        <LinearGradientBrush x:Key="ThemeSweepBrushResource" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#22FFFFFF" Offset="0"/>
-            <GradientStop Color="#44FFFFFF" Offset="0.5"/>
-            <GradientStop Color="#22FFFFFF" Offset="1"/>
-        </LinearGradientBrush>
-    </Window.Resources>
-
-    <Border CornerRadius="14" Background="{StaticResource BackgroundBottomBrush}"
-            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
-            MouseLeftButtonDown="OnBorderMouseLeftButtonDown"
-            MouseMove="OnBorderMouseMove">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="52"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="36"/>
-            </Grid.RowDefinitions>
-
-            <!-- 动态光晕背景 -->
-            <Rectangle Grid.Row="0" Grid.RowSpan="3" x:Name="GlowBg" IsHitTestVisible="False" Opacity="0.8">
-                <Rectangle.Fill>
-                    <VisualBrush Stretch="None" TileMode="None" AlignmentX="Left" AlignmentY="Top">
-                        <VisualBrush.Visual>
-                            <Grid Width="1100" Height="700">
-                                <Ellipse Width="700" Height="700" Fill="{StaticResource GlowTopLeftBrush}"/>
-                                <Ellipse Width="800" Height="800" Fill="{StaticResource GlowBottomRightBrush}"
-                                         HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
-                            </Grid>
-                        </VisualBrush.Visual>
-                    </VisualBrush>
-                </Rectangle.Fill>
-            </Rectangle>
-
-            <!-- 主题切换水波纹 -->
-            <Rectangle Grid.Row="0" Grid.RowSpan="3" x:Name="ThemeSweep" IsHitTestVisible="False"
-                       Opacity="0" Visibility="Collapsed"
-                       Fill="{DynamicResource ThemeSweepBrushResource}"/>
-
-            <!-- ===================== 标题栏 ===================== -->
-            <Grid Grid.Row="0">
-                <Border Background="Transparent">
-                    <Grid Margin="20,0,12,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <!-- 品牌区 -->
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Image Width="28" Height="28" Stretch="Uniform"
-                                   Source="pack://application:,,,/image/icon.png"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   RenderOptions.BitmapScalingMode="HighQuality"/>
-                            <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="TDM" FontFamily="{StaticResource UIFontFamily}"
-                                           FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextBrush}"/>
-                                <TextBlock Text="TDSI Download Manager" FontFamily="{StaticResource UIFontFamily}"
-                                           FontSize="10" Foreground="{StaticResource SubTextBrush}" Margin="0,-1,0,0"/>
-                            </StackPanel>
-                        </StackPanel>
-
-                        <!-- 搜索框（中央） -->
-                        <Border Grid.Column="1" MaxWidth="380" Margin="40,0,40,0"
-                                Background="{StaticResource SurfaceAltBrush}" CornerRadius="20"
-                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
-                                VerticalAlignment="Center" Padding="14,0,14,0" Height="32">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <Path Width="14" Height="14" Stretch="Uniform"
-                                      Fill="{StaticResource SubTextBrush}"
-                                      Data="{StaticResource IconSearch}"/>
-                                <TextBox x:Name="QuickSearchBox" Grid.Column="1"
-                                         BorderThickness="0" Background="Transparent" Margin="8,0,0,0"
-                                         FontFamily="{StaticResource UIFontFamily}" FontSize="12"
-                                         Foreground="{StaticResource TextBrush}"
-                                         CaretBrush="{StaticResource PrimaryBrush}"
-                                         VerticalContentAlignment="Center"
-                                         KeyDown="OnQuickSearchKeyDown"
-                                         Tag="搜索下载、文件、设置..."/>
-                            </Grid>
-                        </Border>
-
-                        <!-- 工具按钮 -->
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Button x:Name="ThemeButton" Style="{StaticResource IconButton}" ToolTip="切换主题（循环：蓝/绿/紫/粉/深）"
-                                    Click="OnThemeToggleClick" Margin="0,0,2,0"
-                                    PreviewMouseLeftButtonDown="OnTitleBarButtonPreviewMouseDown">
-                                <Path Width="18" Height="18" Stretch="Uniform"
-                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                      StrokeThickness="2" Fill="Transparent"
-                                      Data="{StaticResource IconTheme}"/>
-                            </Button>
-                            <Button x:Name="AboutButton" Style="{StaticResource IconButton}" ToolTip="关于 TDM"
-                                    Click="OnAboutClick" Margin="0,0,2,0"
-                                    PreviewMouseLeftButtonDown="OnTitleBarButtonPreviewMouseDown">
-                                <Path Width="18" Height="18" Stretch="Uniform"
-                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                      StrokeThickness="2" Fill="Transparent"
-                                      Data="{StaticResource IconInfo}"/>
-                            </Button>
-                            <!-- 分隔线 -->
-                            <Border Width="1" Height="18" Background="{StaticResource DividerBrush}" Margin="6,0"/>
-                            <!-- 最小化 -->
-                            <Button x:Name="MinimizeButton" Style="{StaticResource IconButton}" ToolTip="最小化到托盘"
-                                    Click="OnMinimizeClick" Margin="0,0,2,0"
-                                    PreviewMouseLeftButtonDown="OnTitleBarButtonPreviewMouseDown">
-                                <Path Width="18" Height="18" Stretch="Uniform"
-                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                      StrokeThickness="2" Fill="Transparent"
-                                      Data="{StaticResource IconMinimize}"/>
-                            </Button>
-                            <!-- 最大化/还原 -->
-                            <Button x:Name="MaximizeButton" Style="{StaticResource IconButton}" ToolTip="最大化"
-                                    Click="OnMaximizeClick" Margin="0,0,2,0"
-                                    PreviewMouseLeftButtonDown="OnTitleBarButtonPreviewMouseDown">
-                                <Path Width="18" Height="18" Stretch="Uniform"
-                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                      StrokeThickness="2" Fill="Transparent"
-                                      Data="{StaticResource IconMaximize}"/>
-                            </Button>
-                            <!-- 关闭 -->
-                            <Button x:Name="CloseButton" Style="{StaticResource IconButton}" ToolTip="关闭"
-                                    Click="OnCloseClick" Margin="0,0,0,0"
-                                    Foreground="{StaticResource ErrorBrush}"
-                                    PreviewMouseLeftButtonDown="OnTitleBarButtonPreviewMouseDown">
-                                <Path Width="18" Height="18" Stretch="Uniform"
-                                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-                                      StrokeThickness="2" Fill="Transparent"
-                                      Data="{StaticResource IconClose}"/>
-                            </Button>
-                        </StackPanel>
-                    </Grid>
-                </Border>
-                <!-- 标题栏底部分隔线 -->
-                <Border Height="1" VerticalAlignment="Bottom"
-                        Background="{StaticResource DividerBrush}" IsHitTestVisible="False"/>
-            </Grid>
-
-            <!-- ===================== 主体 ===================== -->
-            <Grid Grid.Row="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="{StaticResource SidebarWidth}"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-
-                <!-- 侧边栏 -->
-                <Border Grid.Column="0" Background="{StaticResource SidebarTopBrush}"
-                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0">
-                    <DockPanel>
-                        <!-- 快速添加 URL -->
-                        <Border DockPanel.Dock="Top" Margin="16,20,16,4">
-                            <Button x:Name="NewDownloadButton" Style="{StaticResource PrimaryButton}"
-                                    Click="OnNewDownloadClick" Height="42" HorizontalContentAlignment="Left"
-                                    Padding="14,0,12,0">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Path Width="16" Height="16" Stretch="Uniform" Fill="White"
-                                          Data="{StaticResource IconAdd}"/>
-                                    <TextBlock Text="新建下载" Margin="10,0,0,0" FontWeight="SemiBold" FontSize="13"/>
-                                </StackPanel>
-                            </Button>
-                        </Border>
-
-                        <TextBlock DockPanel.Dock="Top" Text="导航" Style="{StaticResource SubText}"
-                                   FontWeight="SemiBold" FontSize="11"
-                                   Margin="20,18,0,8"
-                                   Foreground="{StaticResource SubTextBrush}"/>
-
-                        <!-- 底部用户区 -->
-                        <Border DockPanel.Dock="Bottom" Margin="16,8,16,16" Padding="12"
-                                Background="{StaticResource SurfaceBrush}" CornerRadius="12"
-                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
-                            <StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <Border Width="32" Height="32" CornerRadius="16" ClipToBounds="True">
-                                        <Image Source="pack://application:,,,/image/avatar.jpg" Stretch="UniformToFill"
-                                               RenderOptions.BitmapScalingMode="HighQuality"/>
-                                    </Border>
-                                    <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
-                                        <TextBlock Text="会飞的附魔下界合金剑" FontSize="12" FontWeight="SemiBold"
-                                                   Foreground="{StaticResource TextBrush}"/>
-                                        <TextBlock Text="TDSI 团队" FontSize="10"
-                                                   Foreground="{StaticResource SubTextBrush}" Margin="0,1,0,0"/>
-                                    </StackPanel>
-                                </StackPanel>
-                                <Border Height="1" Background="{StaticResource DividerBrush}" Margin="0,10,0,8"/>
-                                <Button x:Name="ExtensionStatusButton" Style="{StaticResource GhostButton}"
-                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                        Click="OnExtensionStatusClick" Height="32" Padding="0,0,0,0" Margin="-6,0,-6,0">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Path Width="14" Height="14" Stretch="Uniform" Fill="{StaticResource TextSecondaryBrush}"
-                                          Data="{StaticResource IconExtension}" Margin="0,0,6,0"/>
-                                    <Ellipse x:Name="ExtStatusDot" Width="8" Height="8" Fill="#C99A1B"
-                                             VerticalAlignment="Center"/>
-                                    <TextBlock x:Name="ExtStatusText" Text="扩展未连接" Margin="8,0,0,0"
-                                               FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
-                                </StackPanel>
-                                </Button>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- 导航列表 -->
-                        <ListBox x:Name="NavList" Style="{StaticResource SidebarListBox}"
-                                 SelectionChanged="OnNavChanged" BorderThickness="0"
-                                 Margin="0,0,0,8" Background="Transparent">
-                            <ListBoxItem x:Name="NavDownload" IsSelected="True" Tag="download">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Path Width="18" Height="18" Stretch="Uniform"
-                                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
-                                          Data="{StaticResource IconDownload}"/>
-                                    <TextBlock Text="下载任务" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="14"/>
-                                </StackPanel>
-                            </ListBoxItem>
-                            <ListBoxItem x:Name="NavHistory" Tag="history">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Path Width="18" Height="18" Stretch="Uniform"
-                                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
-                                          Data="{StaticResource IconHistory}"/>
-                                    <TextBlock Text="历史记录" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="14"/>
-                                </StackPanel>
-                            </ListBoxItem>
-                            <ListBoxItem x:Name="NavSettings" Tag="settings">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Path Width="18" Height="18" Stretch="Uniform"
-                                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
-                                          Data="{StaticResource IconSettings}"/>
-                                    <TextBlock Text="设置" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="14"/>
-                                </StackPanel>
-                            </ListBoxItem>
-                        </ListBox>
-                    </DockPanel>
-                </Border>
-
-                <!-- 视图区域 -->
-                <ContentControl Grid.Column="1" x:Name="ViewHost" Margin="0"/>
-            </Grid>
-
-            <!-- ===================== 状态栏 ===================== -->
-            <Border Grid.Row="2" Background="{StaticResource SurfaceBrush}"
-                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0"
-                    CornerRadius="0,0,14,14">
-                <Grid Margin="20,0,20,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Ellipse x:Name="StatusDot" Width="6" Height="6" Fill="{StaticResource SuccessBrush}"
-                                 VerticalAlignment="Center"/>
-                        <TextBlock x:Name="StatusLabel" Text="就绪" Margin="8,0,0,0"
-                                   FontFamily="{StaticResource UIFontFamily}" FontSize="12"
-                                   Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                    </StackPanel>
-
-                    <TextBlock x:Name="SpeedLabel" Grid.Column="1" Text="--"
-                               FontFamily="{StaticResource MonoFontFamily}" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{StaticResource PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,16,0"/>
-
-                    <TextBlock x:Name="DownloadCountLabel" Grid.Column="2" Text="0 个任务"
-                               FontFamily="{StaticResource UIFontFamily}" FontSize="12"
-                               Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,16,0"/>
-
-                    <TextBlock x:Name="VersionLabel" Grid.Column="3" Text="v1.0.0"
-                               FontFamily="{StaticResource UIFontFamily}" FontSize="12"
-                               Foreground="{StaticResource SubTextBrush}" Cursor="Hand"
-                               MouseLeftButtonUp="OnVersionLabelClick" VerticalAlignment="Center"
-                               ToolTip="点击查看版本信息（连续点击 5 次进入开发者模式）"/>
-                </Grid>
-            </Border>
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+                <Button x:Name="ThemeButton" Width="34" Height="34" ToolTipService.ToolTip="切换主题"
+                        Click="OnThemeToggleClick" Background="Transparent">
+                    <TextBlock Text="&#xE790;" FontFamily="{ThemeResource SymbolThemeFontFamily}"/>
+                </Button>
+                <Button x:Name="MinimizeButton" Width="46" Height="34" ToolTipService.ToolTip="最小化"
+                        Click="OnMinimizeClick" Background="Transparent">
+                    <TextBlock Text="&#xE921;" FontFamily="{ThemeResource SymbolThemeFontFamily}"/>
+                </Button>
+                <Button x:Name="MaximizeButton" Width="46" Height="34"
+                        Click="OnMaximizeClick" Background="Transparent">
+                    <TextBlock x:Name="MaxIcon" Text="&#xE922;" FontFamily="{ThemeResource SymbolThemeFontFamily}"/>
+                </Button>
+                <Button x:Name="CloseButton" Width="46" Height="34" ToolTipService.ToolTip="关闭"
+                        Click="OnCloseClick" Background="Transparent">
+                    <TextBlock Text="&#xE8BB;" FontFamily="{ThemeResource SymbolThemeFontFamily}"/>
+                </Button>
+            </StackPanel>
         </Grid>
-    </Border>
+
+        <!-- 导航 + 内容 -->
+        <NavigationView x:Name="NavView" Grid.Row="1" PaneDisplayMode="LeftCompact"
+                        IsSettingsVisible="False" IsBackButtonVisible="Collapsed"
+                        OpenPaneLength="232" CompactPaneLength="48"
+                        SelectionChanged="OnNavSelectionChanged"
+                        Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+            <NavigationView.MenuItems>
+                <NavigationViewItem x:Name="NavDownload" Tag="download" IsSelected="True">
+                    <NavigationViewItem.Content>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="下载任务" Margin="8,0,0,0"/>
+                        </StackPanel>
+                    </NavigationViewItem.Content>
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Download"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Name="NavHistory" Tag="history">
+                    <NavigationViewItem.Content>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="历史记录" Margin="8,0,0,0"/>
+                        </StackPanel>
+                    </NavigationViewItem.Content>
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Clock"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Name="NavSettings" Tag="settings">
+                    <NavigationViewItem.Content>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="设置" Margin="8,0,0,0"/>
+                        </StackPanel>
+                    </NavigationViewItem.Content>
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Setting"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+
+            <Frame x:Name="ContentFrame"/>
+        </NavigationView>
+
+        <!-- 状态栏 -->
+        <Border Grid.Row="2" Background="{ThemeResource SystemChromeLowColor}" Padding="12,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="StatusLabel" Grid.Column="0" Text="就绪" VerticalAlignment="Center"
+                           FontSize="12" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                <TextBlock x:Name="SpeedLabel" Grid.Column="1" Text="--" VerticalAlignment="Center"
+                           FontSize="11" Margin="0,0,16,0"/>
+                <TextBlock x:Name="DownloadCountLabel" Grid.Column="2" Text="0 个任务" VerticalAlignment="Center"
+                           FontSize="12" Margin="0,0,16,0"/>
+                <TextBlock x:Name="VersionLabel" Grid.Column="3" Text="v2.0.0" VerticalAlignment="Center"
+                           FontSize="12" Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
+                           PointerPressed="OnVersionClick"/>
+            </Grid>
+        </Border>
+
+        <!-- 托盘图标 -->
+        <notify:TaskbarIcon x:Name="TrayIcon"/>
+    </Grid>
 </Window>

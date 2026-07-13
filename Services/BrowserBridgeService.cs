@@ -27,7 +27,6 @@ namespace TDM.Services
 
         private readonly HttpListener _listener;
         private readonly Thread _thread;
-        private CancellationTokenSource? _cts;
         private volatile bool _running;
 
         public event EventHandler<SniffedResource>? ResourceReceived;

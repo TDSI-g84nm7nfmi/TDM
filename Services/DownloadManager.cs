@@ -74,6 +74,7 @@ namespace TDM.Services
         {
             if (!IsPaused) return;
             IsPaused = false;
+            try { _mainTask?.Wait(2000); } catch { }
             _cts = new CancellationTokenSource();
             _mainTask = Task.Run(() => RunAsync(_cts.Token));
             Resumed?.Invoke(this, EventArgs.Empty);
@@ -124,8 +125,6 @@ namespace TDM.Services
                 // 4. 多线程分片下载
                 long partSize = _totalSize / _item.Threads;
                 var tasks = new List<Task>();
-                using var pauseGate = new SemaphoreSlim(1, 1);
-                pauseGate.Wait();
 
                 for (int i = 0; i < _item.Threads; i++)
                 {
@@ -136,19 +135,9 @@ namespace TDM.Services
 
                     tasks.Add(Task.Run(async () =>
                     {
-                        await DownloadPartAsync(idx, start, end, already, pauseGate, outerCt);
+                        await DownloadPartAsync(idx, start, end, already, outerCt);
                     }));
                 }
-
-                // 启动后释放 pauseGate（除非已被暂停）
-                _ = Task.Run(async () =>
-                {
-                    while (!outerCt.IsCancellationRequested && !IsStopped)
-                    {
-                        if (!IsPaused) { try { pauseGate.Release(); break; } catch { /* already released */ } }
-                        await Task.Delay(100);
-                    }
-                });
 
                 try
                 {
@@ -263,7 +252,7 @@ namespace TDM.Services
             return false;
         }
 
-        private async Task DownloadPartAsync(int idx, long start, long end, long alreadyDone, SemaphoreSlim pauseGate, CancellationToken outerCt)
+        private async Task DownloadPartAsync(int idx, long start, long end, long alreadyDone, CancellationToken outerCt)
         {
             long actualStart = start + alreadyDone;
             if (actualStart > end) return;
@@ -293,12 +282,6 @@ namespace TDM.Services
                     while ((read = await stream.ReadAsync(buffer, 0, buffer.Length, outerCt)) > 0)
                     {
                         if (IsStopped) return;
-                        if (IsPaused)
-                        {
-                            // 等待恢复（pauseGate 会被重新等待/释放来控制）
-                            try { await pauseGate.WaitAsync(CancellationToken.None); } catch { }
-                            if (IsStopped) return;
-                        }
 
                         await fs.WriteAsync(buffer, 0, read, outerCt);
                         local += read;
@@ -464,10 +447,7 @@ namespace TDM.Services
         public event EventHandler<DownloadItem>? ItemCompleted;
         public event EventHandler<DownloadItem>? ItemFailed;
 
-        public IReadOnlyCollection<DownloadItem> Items
-        {
-            get { lock (_items) { return _items.Values.ToList(); } }
-        }
+        public IReadOnlyCollection<DownloadItem> Items => _items.Values.ToList();
 
         public DownloadManager()
         {
@@ -561,8 +541,7 @@ namespace TDM.Services
             }
             if (meta == null) return null;
 
-            // 用 infoHash 做去重 key
-            var key = $"torrent:{meta.InfoHash}";
+            var key = $"torrent://{meta.InfoHash}";
             if (_items.ContainsKey(key)) return _items[key];
 
             try { Directory.CreateDirectory(saveDir); }
@@ -600,8 +579,12 @@ namespace TDM.Services
                 Logger.Warn("无法解析 magnet 链接: " + magnetUrl);
                 return null;
             }
-            var key = $"magnet:{info.InfoHash}";
-            if (_items.ContainsKey(key)) return _items[key];
+            var dedupKey = $"magnet:{info.InfoHash}";
+            foreach (var existing in _items.Values)
+            {
+                if (existing.InfoHash != null && existing.InfoHash.Equals(info.InfoHash, StringComparison.OrdinalIgnoreCase))
+                    return existing;
+            }
 
             try { Directory.CreateDirectory(saveDir); }
             catch { return null; }
@@ -621,7 +604,7 @@ namespace TDM.Services
                 TotalSize = info.ExactLength
             };
 
-            _items[key] = item;
+            _items[magnetUrl] = item;
             ItemAdded?.Invoke(this, item);
             StartBtDownload(item, saveDir, null, info);
             return item;
@@ -643,8 +626,12 @@ namespace TDM.Services
                 Logger.Warn("暂仅支持 file 类型 ed2k 链接");
                 return null;
             }
-            var key = $"ed2k:{info.Hash}";
-            if (_items.ContainsKey(key)) return _items[key];
+            var dedupKey = $"ed2k:{info.Hash}";
+            foreach (var existing in _items.Values)
+            {
+                if (existing.InfoHash != null && existing.InfoHash.Equals(info.Hash, StringComparison.OrdinalIgnoreCase))
+                    return existing;
+            }
 
             try { Directory.CreateDirectory(saveDir); }
             catch { return null; }
@@ -664,7 +651,7 @@ namespace TDM.Services
                 TotalSize = info.Size
             };
 
-            _items[key] = item;
+            _items[ed2kUrl] = item;
             ItemAdded?.Invoke(this, item);
             StartEd2kDownload(item, saveDir, info);
             return item;
@@ -687,8 +674,8 @@ namespace TDM.Services
         public void Stop(DownloadItem item)
         {
             if (_downloaders.TryRemove(item.Url, out var dl)) { dl.Stop(); dl.Dispose(); }
-            if (_btDownloaders.TryRemove(item.Url, out var btdl)) { btdl.Stop(); btdl.Dispose(); }
-            if (_ed2kDownloaders.TryRemove(item.Url, out var edl)) { edl.Stop(); edl.Dispose(); }
+            else if (_btDownloaders.TryRemove(item.Url, out var btdl)) { btdl.Stop(); btdl.Dispose(); }
+            else if (_ed2kDownloaders.TryRemove(item.Url, out var edl)) { edl.Stop(); edl.Dispose(); }
             if (_items.TryRemove(item.Url, out var it))
             {
                 ItemRemoved?.Invoke(this, it);

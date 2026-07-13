@@ -27,12 +27,30 @@ namespace TDM.Services
 
         private static object ParseNext(BinaryReader r)
         {
-            int b = r.PeekChar();
+            int b = PeekByte(r);
+            if (b < 0) throw new EndOfStreamException("bencode 数据意外结束");
             if (b == 'i') return ParseInt(r);
             if (b == 'l') return ParseList(r);
             if (b == 'd') return ParseDict(r);
             if (b >= '0' && b <= '9') return ParseString(r);
             throw new FormatException($"bencode 解析失败：意外的字节 0x{b:X2} ('{(char)b}')");
+        }
+
+        private static int PeekByte(BinaryReader r)
+        {
+            var stream = r.BaseStream;
+            if (!stream.CanSeek)
+            {
+                int b = r.ReadByte();
+                if (b < 0) return b;
+                var buffer = new byte[1] { (byte)b };
+                stream.Position -= 1;
+                return b;
+            }
+            long pos = stream.Position;
+            int result = r.ReadByte();
+            stream.Position = pos;
+            return result;
         }
 
         private static long ParseInt(BinaryReader r)
@@ -79,7 +97,8 @@ namespace TDM.Services
             var list = new List<object?>();
             while (true)
             {
-                int p = r.PeekChar();
+                int p = PeekByte(r);
+                if (p < 0) throw new EndOfStreamException("bencode list 意外结束");
                 if (p == 'e') { r.ReadByte(); break; }
                 list.Add(ParseNext(r));
             }
@@ -93,7 +112,8 @@ namespace TDM.Services
             var dict = new Dictionary<string, object?>(StringComparer.Ordinal);
             while (true)
             {
-                int p = r.PeekChar();
+                int p = PeekByte(r);
+                if (p < 0) throw new EndOfStreamException("bencode dict 意外结束");
                 if (p == 'e') { r.ReadByte(); break; }
                 var keyBytes = ParseString(r);
                 var key = Encoding.UTF8.GetString(keyBytes);

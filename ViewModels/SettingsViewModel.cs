@@ -1,12 +1,15 @@
 using System;
 using System.Windows.Input;
+using Microsoft.UI.Xaml.Controls;
 using TDM.Services;
 
 namespace TDM.ViewModels
 {
     public class SettingsViewModel : ObservableObject
     {
-        private string _selectedTheme = ThemeManager.Blue;
+        public static SettingsViewModel Instance { get; } = new SettingsViewModel();
+
+        private string _selectedTheme = SettingsService.Current.Theme ?? ThemeManager.Purple;
         public string SelectedTheme
         {
             get => _selectedTheme;
@@ -197,15 +200,18 @@ namespace TDM.ViewModels
 
         private void Browse()
         {
-            using var dlg = new System.Windows.Forms.FolderBrowserDialog
+            var picker = new Windows.Storage.Pickers.FolderPicker
             {
-                SelectedPath = DefaultSaveDir,
-                Description = "选择默认下载目录"
+                SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Downloads
             };
-            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                DefaultSaveDir = dlg.SelectedPath;
-            }
+            picker.FileTypeFilter.Add("*");
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.CurrentWindow);
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+            var task = picker.PickSingleFolderAsync().AsTask();
+            task.Wait();
+            var folder = task.Result;
+            if (folder != null)
+                DefaultSaveDir = folder.Path;
         }
 
         private void OpenFolder(string path)
@@ -214,22 +220,39 @@ namespace TDM.ViewModels
                 System.Diagnostics.Process.Start("explorer.exe", path);
         }
 
-        private void ClearHistory()
+        private async void ClearHistory()
         {
-            var result = System.Windows.MessageBox.Show("确定要清空所有下载历史吗？此操作不可恢复。",
-                "清空历史", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question);
-            if (result == System.Windows.MessageBoxResult.Yes)
+            var dialog = new ContentDialog
+            {
+                Title = "清空历史",
+                Content = "确定要清空所有下载历史吗？此操作不可恢复。",
+                PrimaryButtonText = "确定",
+                CloseButtonText = "取消",
+                DefaultButton = ContentDialogButton.Close,
+                XamlRoot = App.CurrentWindow.Content.XamlRoot
+            };
+            var result = await dialog.ShowAsync();
+            if (result == ContentDialogResult.Primary)
             {
                 HistoryService.Clear();
                 HistoryService.Save();
             }
         }
 
-        private void Reset()
+        private async void Reset()
         {
-            var result = System.Windows.MessageBox.Show("重置所有设置为默认值？", "重置设置",
-                System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question);
-            if (result != System.Windows.MessageBoxResult.Yes) return;
+            var dialog = new ContentDialog
+            {
+                Title = "重置设置",
+                Content = "重置所有设置为默认值？",
+                PrimaryButtonText = "确定",
+                CloseButtonText = "取消",
+                DefaultButton = ContentDialogButton.Close,
+                XamlRoot = App.CurrentWindow.Content.XamlRoot
+            };
+            var result = await dialog.ShowAsync();
+            if (result != ContentDialogResult.Primary) return;
+
             SettingsService.Update(s =>
             {
                 s.Theme = "purple";
@@ -257,7 +280,7 @@ namespace TDM.ViewModels
             NotifyError = SettingsService.Current.NotifyError;
             AcrylicBlur = SettingsService.Current.AcrylicBlur;
             ScanBrowsersOnStartup = SettingsService.Current.ScanBrowsersOnStartup;
-            SelectedTheme = "blue";
+            SelectedTheme = "purple";
         }
     }
 }

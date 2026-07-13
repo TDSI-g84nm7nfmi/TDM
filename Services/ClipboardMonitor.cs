@@ -1,12 +1,8 @@
 using System;
-using System.Windows;
-using System.Windows.Threading;
+using Microsoft.UI.Xaml;
 
 namespace TDM.Services
 {
-    /// <summary>
-    /// 剪贴板监视器。
-    /// </summary>
     public class ClipboardMonitor : IDisposable
     {
         private readonly DispatcherTimer _timer;
@@ -17,7 +13,7 @@ namespace TDM.Services
 
         public ClipboardMonitor()
         {
-            _timer = new DispatcherTimer(DispatcherPriority.Background)
+            _timer = new DispatcherTimer
             {
                 Interval = TimeSpan.FromSeconds(1)
             };
@@ -27,26 +23,39 @@ namespace TDM.Services
         public void Start()
         {
             if (_disposed) return;
-            try { _lastText = Clipboard.GetText() ?? string.Empty; } catch { }
+            try
+            {
+                var data = Windows.ApplicationModel.DataTransfer.Clipboard.GetContent();
+                if (data.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.Text))
+                {
+                    var task = data.GetTextAsync().AsTask();
+                    task.Wait(1000);
+                    _lastText = task.Result ?? string.Empty;
+                }
+            }
+            catch { }
             _timer.Start();
         }
 
         public void Stop() => _timer.Stop();
 
-        private void OnTick(object? sender, EventArgs e)
+        private void OnTick(object? sender, object e)
         {
             if (_disposed) return;
             try
             {
-                var text = Clipboard.GetText() ?? string.Empty;
+                var data = Windows.ApplicationModel.DataTransfer.Clipboard.GetContent();
+                if (!data.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.Text))
+                    return;
+                var task = data.GetTextAsync().AsTask();
+                task.Wait(1000);
+                var text = task.Result ?? string.Empty;
                 if (string.IsNullOrEmpty(text) || text == _lastText) return;
                 _lastText = text;
                 if (IsUrl(text))
-                {
                     UrlDetected?.Invoke(this, text);
-                }
             }
-            catch { /* 忽略 */ }
+            catch { }
         }
 
         public static bool IsUrl(string text)

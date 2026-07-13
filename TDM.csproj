@@ -2,13 +2,13 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
-    <UseWPF>true</UseWPF>
-    <UseWindowsForms>true</UseWindowsForms>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RuntimeIdentifiers>win-x64;win-x86;win-arm64</RuntimeIdentifiers>
+    <UseWinUI>true</UseWinUI>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>disable</ImplicitUsings>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>TDM</AssemblyName>
     <RootNamespace>TDM</RootNamespace>
     <Product>TDM</Product>
@@ -16,52 +16,23 @@
     <Description>TDSI Download Manager (TDM) - 现代化多线程下载管理器</Description>
     <Company>B站@会飞的附魔下界合金剑</Company>
     <Copyright>© 2024-2026 B站@会飞的附魔下界合金剑</Copyright>
-    <Version>1.0.0</Version>
-    <FileVersion>1.0.0.0</FileVersion>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <InformationalVersion>1.0.0</InformationalVersion>
+    <Version>2.0.0</Version>
+    <FileVersion>2.0.0.0</FileVersion>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <InformationalVersion>2.0.0</InformationalVersion>
     <NeutralLanguage>zh-CN</NeutralLanguage>
     <ApplicationIcon>image\icon.ico</ApplicationIcon>
+    <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
+    <WindowsSdkPackageVersion>10.0.26100.84</WindowsSdkPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Update="Themes\Colors.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </None>
-    <None Update="Themes\Controls.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </None>
-    <None Update="Themes\Window.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </None>
-    <None Update="Views\DownloadView.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </None>
-    <None Update="Views\HistoryView.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </None>
-    <None Update="Views\SettingsView.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </None>
-    <None Update="Windows\AboutWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </None>
-    <None Update="Windows\LogWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </None>
-    <None Update="Windows\ExtensionInstallerWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </None>
-    <None Update="Windows\AlreadyRunningWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </None>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260529003" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4654" />
+    <PackageReference Include="H.NotifyIcon.WinUI" Version="2.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="image\icon.ico" />
     <Resource Include="image\icon.png" />
     <Resource Include="image\avatar.jpg" />

@@ -16,5 +16,8 @@ namespace TDM
 
         [DllImport("user32.dll")]
         internal static extern bool IsIconic(IntPtr hWnd);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        internal static extern int MessageBox(IntPtr hWnd, string text, string caption, uint type);
     }
 }

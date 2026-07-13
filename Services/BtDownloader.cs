@@ -74,6 +74,7 @@ namespace TDM.Services
         {
             if (!IsPaused) return;
             IsPaused = false;
+            try { _mainTask?.Wait(2000); } catch { }
             _cts = new CancellationTokenSource();
             _mainTask = Task.Run(() => RunAsync(_cts.Token));
             Resumed?.Invoke(this, EventArgs.Empty);
@@ -368,6 +369,7 @@ namespace TDM.Services
         {
             if (!IsPaused) return;
             IsPaused = false;
+            try { _mainTask?.Wait(2000); } catch { }
             _cts = new CancellationTokenSource();
             _mainTask = Task.Run(() => RunAsync(_cts.Token));
             Resumed?.Invoke(this, EventArgs.Empty);

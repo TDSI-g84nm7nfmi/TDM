@@ -1,13 +1,12 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
-using System.Windows;
-using System.Windows.Threading;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Dispatching;
 using TDM.Services;
 using TDM.ViewModels;
-using TDM.Windows;
 
 namespace TDM
 {
@@ -15,45 +14,41 @@ namespace TDM
     {
         public static string AppName { get; } = "TDM";
         public static string AppFullName { get; } = "TDSI Download Manager";
-        public static string AppVersion { get; } = "1.0.0";
+        public static string AppVersion { get; } = "2.0.0";
         public static string AppAuthor { get; } = "B站@会飞的附魔下界合金剑";
 
         public static string DataDirectory { get; private set; } = "";
         public static string LogDirectory { get; private set; } = "";
         public static string ConfigDirectory { get; private set; } = "";
 
-        /// <summary>
-        /// 跨线程访问 UI Dispatcher 的便捷属性。
-        /// </summary>
-        public static Dispatcher CurrentDispatcher => Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
+        public static DispatcherQueue CurrentDispatcher => DispatcherQueue.GetForCurrentThread();
 
         private static Mutex? _singleInstanceMutex;
+        private static Window? _mainWindow;
+        public static Window CurrentWindow => _mainWindow ?? throw new InvalidOperationException("Main window not initialized.");
 
         public App()
         {
-            DispatcherUnhandledException += OnDispatcherUnhandledException;
+            UnhandledException += OnUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += OnDomainUnhandledException;
         }
 
-        protected override void OnStartup(StartupEventArgs e)
+        protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
-            // 单实例检测
             bool createdNew;
             _singleInstanceMutex = new Mutex(true, $"TDM-SingleInstance-{Environment.MachineName}", out createdNew);
             if (!createdNew)
             {
-                // 尝试激活已在运行的窗口
                 try
                 {
                     var existing = System.Diagnostics.Process.GetProcessesByName("TDM")
                         .FirstOrDefault(p => p.Id != System.Diagnostics.Process.GetCurrentProcess().Id);
                     if (existing != null)
                     {
-                        // 找到主窗口句柄并激活
                         var hwnd = existing.MainWindowHandle;
                         if (hwnd != IntPtr.Zero)
                         {
-                            if (NativeMethods.IsIconic(hwnd)) NativeMethods.ShowWindowAsync(hwnd, 9 /* SW_RESTORE */);
+                            if (NativeMethods.IsIconic(hwnd)) NativeMethods.ShowWindowAsync(hwnd, 9);
                             NativeMethods.SetForegroundWindow(hwnd);
                         }
                     }
@@ -62,41 +57,22 @@ namespace TDM
                 {
                     Logger.Warn("激活已有实例失败: " + ex.Message);
                 }
-
-                try
-                {
-                    var dlg = new AlreadyRunningWindow();
-                    dlg.ShowDialog();
-                }
-                catch (Exception ex)
-                {
-                    Logger.Warn("显示已在运行提示失败: " + ex.Message);
-                }
                 Environment.Exit(0);
-                return;
             }
 
-            // 数据目录
             var docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             DataDirectory = Path.Combine(docs, "TDM");
             LogDirectory = Path.Combine(DataDirectory, "Logs");
             Directory.CreateDirectory(DataDirectory);
             Directory.CreateDirectory(LogDirectory);
 
-            // Config 目录（在安装目录下）
             ConfigDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config");
             Directory.CreateDirectory(ConfigDirectory);
 
-            // 日志初始化
             Logger.Init(LogDirectory);
-
-            // 加载设置（必须在主题加载前）
             SettingsService.Load();
-
-            // 主题加载
             ThemeManager.Load();
 
-            // 启动浏览器桥接服务（接收扩展推过来的资源）
             try
             {
                 BrowserBridgeService.Start();
@@ -104,27 +80,25 @@ namespace TDM
             }
             catch (Exception ex) { Logger.Warn("BrowserBridge 启动失败: " + ex.Message); }
 
-            // 启动画面（轻量版）
-            base.OnStartup(e);
+            _mainWindow = new MainWindow();
+            _mainWindow.Activate();
         }
 
         private void OnBrowserResourceReceived(object? sender, Models.SniffedResource resource)
         {
             try
             {
-                // 切到主线程
-                Dispatcher.Invoke(() =>
+                CurrentDispatcher.TryEnqueue(() =>
                 {
                     try
                     {
-                        // 推入嗅探资源队列
                         DownloadViewModel.Instance.AddIncomingResource(resource);
-                        // 自动跳到下载页
-                        if (MainWindow is MainWindow mw)
+                        if (_mainWindow is MainWindow mw)
                         {
-                            mw.NavDownload.IsSelected = true;
-                            mw.Activate();
-                            if (mw.WindowState == WindowState.Minimized) mw.WindowState = WindowState.Normal;
+                            mw.NavigateToDownload();
+                            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(mw);
+                            if (NativeMethods.IsIconic(hwnd)) NativeMethods.ShowWindowAsync(hwnd, 9);
+                            NativeMethods.SetForegroundWindow(hwnd);
                         }
                         Logger.Info($"浏览器资源已入队：{resource.Filename} ({resource.Type})");
                     }
@@ -134,37 +108,37 @@ namespace TDM
             catch (Exception ex) { Logger.Warn("OnBrowserResourceReceived: " + ex.Message); }
         }
 
-        protected override void OnExit(ExitEventArgs e)
+        public static void OnAppExit()
         {
             try
             {
                 SettingsService.Save();
                 ThemeManager.PersistCurrent();
             }
-            catch { /* 忽略退出时的错误 */ }
+            catch { }
             _singleInstanceMutex?.ReleaseMutex();
-            base.OnExit(e);
         }
 
-        // 防止异常处理器自身抛异常时陷入递归 MessageBox 风暴
-        private bool _showingError = false;
-        private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+        private bool _showingError;
+        private void OnUnhandledException(object? sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
         {
             try
             {
                 Logger.Error("UI 线程未处理异常", e.Exception);
                 if (_showingError) { e.Handled = true; return; }
                 _showingError = true;
-                MessageBox.Show(
+                NativeMethods.MessageBox(
+                    IntPtr.Zero,
                     $"发生未处理异常：{e.Exception.Message}\n\n程序将继续运行。",
-                    AppName, MessageBoxButton.OK, MessageBoxImage.Error);
+                    AppName,
+                    0);
                 _showingError = false;
             }
             catch { }
             finally { e.Handled = true; }
         }
 
-        private void OnDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
+        private void OnDomainUnhandledException(object sender, System.UnhandledExceptionEventArgs e)
         {
             if (e.ExceptionObject is Exception ex)
             {

@@ -20,7 +20,7 @@ namespace TDM.Models
     {
         public string Theme { get; set; } = "purple";
         public string DefaultSaveDir { get; set; } = string.Empty;
-        public int DefaultThreads { get; set; } = 32;
+        public int DefaultThreads { get; set; } = 4;
         public int MaxRetries { get; set; } = 3;
         public bool EnableClipboard { get; set; } = true;
         public bool MinimizeToTray { get; set; } = true;

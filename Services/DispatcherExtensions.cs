@@ -1,13 +1,14 @@
 using System;
-using System.Windows.Threading;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
 
 namespace TDM.Services
 {
     public static class DispatcherExtensions
     {
-        public static void DelayInvoke(this Dispatcher dispatcher, Action action, int milliseconds)
+        public static void DelayInvoke(this DispatcherQueue dispatcher, Action action, int milliseconds)
         {
-            var timer = new DispatcherTimer(DispatcherPriority.Background)
+            var timer = new DispatcherTimer
             {
                 Interval = TimeSpan.FromMilliseconds(milliseconds)
             };
